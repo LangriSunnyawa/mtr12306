@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>MTR-12306 铁路客票</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+	<header class="top">
+		<div class="brand">
+			<span class="logo">铁</span>
+			<div>
+				<h1>MTR-12306 铁路客票</h1>
+				<p>Minecraft Transit Railway · 在线购票与检票</p>
+			</div>
+		</div>
+		<nav class="tabs">
+			<button data-tab="buy" class="active">购票</button>
+			<button data-tab="mine">我的车票</button>
+			<button data-tab="live">检票动态</button>
+			<button id="btn-login-top">登录</button>
+			<a class="link" href="/admin">管理后台</a>
+		</nav>
+	</header>
+
+	<main>
+		<div id="session-bar" class="session-bar">未登录 · 在游戏内输入 <b>/ticket login</b> 获取验证码后登录</div>
+
+		<section id="tab-buy" class="tab active">
+			<div class="card">
+				<h2>车票查询</h2>
+				<div class="search-grid">
+					<label class="field">出发站
+						<select id="from"></select>
+					</label>
+					<label class="field">到达站
+						<select id="to"></select>
+					</label>
+					<label class="field">乘车日期
+						<input type="date" id="date">
+					</label>
+					<button class="primary" id="btn-search">查询车次</button>
+				</div>
+			</div>
+			<div id="status-line" class="status-line"></div>
+			<div id="results" class="card">
+				<div class="empty">请选择出发站、到达站与日期后查询车次</div>
+			</div>
+		</section>
+
+		<section id="tab-mine" class="tab">
+			<div class="card">
+				<h2>我的车票</h2>
+				<div class="inline">
+					<span class="muted" id="mine-hint">登录后可查看并退订自己的车票</span>
+					<button class="primary" id="btn-mine">刷新车票</button>
+				</div>
+			</div>
+			<div id="mine-list"></div>
+		</section>
+
+		<section id="tab-live" class="tab">
+			<div class="card">
+				<h2>今日检票动态</h2>
+				<div id="live-list"><div class="empty">加载中…</div></div>
+				<p class="muted" style="margin-top:12px">页面每 10 秒自动刷新。只有「检票中」车次的车票才能在对应检票口通过闸机。</p>
+			</div>
+		</section>
+	</main>
+
+	<footer>MTR-12306 · 基于 MTR 模组的网页购票 / 检票系统</footer>
+
+	<div id="modal" class="modal hidden">
+		<div class="modal-card" id="modal-card"></div>
+	</div>
+	<div id="toast" class="toast"></div>
+
+	<script src="/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+{
+  "parent": "mtr12306:block/ticket_gate_base",
+  "textures": {
+    "color": "block/green_concrete",
+    "yellow_glass_off": "block/yellow_stained_glass",
+    "yellow_glass_on": "mtr12306:block/gate_transparent",
+    "sign": "mtr12306:block/gate_arrow_open"
+  }
+}

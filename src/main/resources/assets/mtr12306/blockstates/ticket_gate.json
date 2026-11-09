@@ -1,0 +1,94 @@
+{
+  "variants": {
+    "facing=north,open=closed,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_closed"
+    },
+    "facing=east,open=closed,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_closed",
+      "y": 90
+    },
+    "facing=south,open=closed,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_closed",
+      "y": 180
+    },
+    "facing=west,open=closed,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_closed",
+      "y": 270
+    },
+    "facing=north,open=pending,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_pending"
+    },
+    "facing=east,open=pending,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_pending",
+      "y": 90
+    },
+    "facing=south,open=pending,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_pending",
+      "y": 180
+    },
+    "facing=west,open=pending,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_pending",
+      "y": 270
+    },
+    "facing=north,open=open,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_open"
+    },
+    "facing=east,open=open,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_open",
+      "y": 90
+    },
+    "facing=south,open=open,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_open",
+      "y": 180
+    },
+    "facing=west,open=open,kind=entrance": {
+      "model": "mtr12306:block/ticket_gate_entrance_open",
+      "y": 270
+    },
+    "facing=north,open=closed,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_closed"
+    },
+    "facing=east,open=closed,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_closed",
+      "y": 90
+    },
+    "facing=south,open=closed,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_closed",
+      "y": 180
+    },
+    "facing=west,open=closed,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_closed",
+      "y": 270
+    },
+    "facing=north,open=pending,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_pending"
+    },
+    "facing=east,open=pending,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_pending",
+      "y": 90
+    },
+    "facing=south,open=pending,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_pending",
+      "y": 180
+    },
+    "facing=west,open=pending,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_pending",
+      "y": 270
+    },
+    "facing=north,open=open,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_open"
+    },
+    "facing=east,open=open,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_open",
+      "y": 90
+    },
+    "facing=south,open=open,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_open",
+      "y": 180
+    },
+    "facing=west,open=open,kind=exit": {
+      "model": "mtr12306:block/ticket_gate_exit_open",
+      "y": 270
+    }
+  }
+}

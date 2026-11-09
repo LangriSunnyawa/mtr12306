@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>MTR-12306 管理后台</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+	<header class="top">
+		<div class="brand">
+			<span class="logo">管</span>
+			<div>
+				<h1>MTR-12306 运营管理后台</h1>
+				<p>车站 · 检票口 · 车次/坐席 · 闸机 · 检票 · 票价钱包</p>
+			</div>
+		</div>
+		<nav class="tabs">
+			<a class="link" href="/">返回购票页</a>
+			<button id="btn-logout">退出登录</button>
+		</nav>
+	</header>
+
+	<main>
+		<div id="login-view">
+			<div class="card login-box">
+				<h2>管理员登录</h2>
+				<label class="field">管理密码
+					<input type="password" id="admin-password" placeholder="默认 mtr12306，请在 config/mtr12306.json 修改">
+				</label>
+				<button class="primary" id="btn-login" style="margin-top:16px;width:100%">登录</button>
+				<p class="muted" style="margin-top:12px">密码保存在服务器 config/mtr12306.json 的 adminPassword 字段；
+					同一 IP 连续失败会临时锁定。</p>
+			</div>
+		</div>
+
+		<div id="admin-view" style="display:none">
+			<div class="card">
+				<h2>概览</h2>
+				<div id="overview" class="inline"></div>
+			</div>
+
+			<div class="card">
+				<h2>车站管理</h2>
+				<div class="inline" style="margin-bottom:12px">
+					<button class="ghost" id="btn-mtr-all">一键导入全部 MTR 车站</button>
+					<button class="ghost" id="btn-mtr">列出 MTR 车站</button>
+					<span class="muted" id="mtr-hint"></span>
+				</div>
+				<div id="mtr-list"></div>
+				<div class="grid-2" style="margin-top:12px">
+					<label class="field">车站名称（与 MTR 车站同名时，闸机才能绑定它的检票口）
+						<input type="text" id="station-name" placeholder="例如 中央车站">
+					</label>
+					<label class="field">站台（逗号分隔，可留空）
+						<input type="text" id="station-platforms" placeholder="1,2,3A">
+					</label>
+				</div>
+				<button class="primary" id="btn-add-station" style="margin-top:12px">新增车站</button>
+				<div id="station-table" style="margin-top:16px"></div>
+			</div>
+
+			<div class="card">
+				<h2>检票口管理</h2>
+				<div class="stop-row" style="grid-template-columns:1.2fr 1fr 1.4fr auto">
+					<select id="checkpoint-station"></select>
+					<input type="text" id="checkpoint-name" placeholder="检票口名称，如 A1">
+					<input type="text" id="checkpoint-platforms" placeholder="负责站台（逗号分隔，留空=全部）">
+					<button class="primary" id="btn-add-checkpoint">新增检票口</button>
+				</div>
+				<div id="checkpoint-table" style="margin-top:16px"></div>
+			</div>
+
+			<div class="card">
+				<h2>车次管理（新增 / 修改）</h2>
+				<div class="grid-2">
+					<label class="field">车次号
+						<input type="text" id="service-number" placeholder="例如 G1234">
+					</label>
+					<label class="field">列车名称（可留空）
+						<input type="text" id="service-name" placeholder="例如 城际动车">
+					</label>
+					<label class="field">开行日期（留空=每天）
+						<input type="date" id="service-date">
+					</label>
+					<label class="field">提示
+						<input type="text" value="时刻 HH:mm；里程为累计公里数，票价 = 里程差 × 0.1 元 × 坐席倍率" disabled>
+					</label>
+				</div>
+
+				<p class="muted" style="margin:16px 0 8px">停靠站（按行车顺序；里程 = 从始发站到该站的累计公里）</p>
+				<div class="stop-row wide" style="font-size:12px;color:#6b7280">
+					<span>车站</span><span>站台</span><span>到达</span><span>发车</span><span>天偏移</span><span>累计里程km</span><span></span>
+				</div>
+				<div id="stop-rows"></div>
+				<button class="ghost" id="btn-add-stop">+ 添加停靠站</button>
+
+				<p class="muted" style="margin:18px 0 8px">坐席与车厢（layout 用 <code>A B C|D F</code> 表示，| 为过道）</p>
+				<div class="seat-config-row" style="font-size:12px;color:#6b7280">
+					<span>坐席码</span><span>名称</span><span>座位排列</span><span>排数</span><span>车厢号</span>
+					<span>餐车号</span><span>倍率</span><span>对号</span><span></span>
+				</div>
+				<div id="seat-rows"></div>
+				<div class="inline" style="margin-top:4px">
+					<button class="ghost" id="btn-add-seat">+ 添加坐席</button>
+					<button class="ghost" id="btn-add-intercity">+ 添加城际（自由席）</button>
+					<button class="ghost" id="btn-default-seat">恢复默认（二等/一等/商务）</button>
+				</div>
+
+				<div class="inline" style="margin-top:16px">
+					<button class="primary" id="btn-save-service">保存车次</button>
+					<span class="muted" id="service-editing"></span>
+				</div>
+				<div id="service-table" style="margin-top:16px"></div>
+			</div>
+
+			<div class="card">
+				<h2>批量开行车次</h2>
+				<p class="muted">设置号段、停站模板（区间运行时间/停站时间/区间里程）与坐席，按固定发车间隔批量生成。</p>
+				<div class="grid-2" style="margin-top:12px">
+					<label class="field">车次前缀
+						<input type="text" id="batch-prefix" value="G">
+					</label>
+					<label class="field">列车名称
+						<input type="text" id="batch-name" placeholder="例如 城际动车">
+					</label>
+					<label class="field">起始号 / 结束号 / 步长 / 位数
+						<div class="inline">
+							<input type="number" id="batch-from" value="1001" style="width:90px">
+							<input type="number" id="batch-to" value="1010" style="width:90px">
+							<input type="number" id="batch-step" value="1" style="width:70px">
+							<input type="number" id="batch-digits" value="4" style="width:70px">
+						</div>
+					</label>
+					<label class="field">首班发车 / 间隔（分钟）
+						<div class="inline">
+							<input type="time" id="batch-start" value="06:00" style="width:120px">
+							<input type="number" id="batch-headway" value="15" style="width:100px">
+						</div>
+					</label>
+					<label class="field">开行日期（留空=每天）
+						<input type="date" id="batch-date">
+					</label>
+				</div>
+
+				<p class="muted" style="margin:16px 0 8px">停站模板（区间运行 = 上一站到本站的运行分钟；停站 = 本站停留分钟）</p>
+				<div class="batch-stop-row" style="font-size:12px;color:#6b7280">
+					<span>车站</span><span>站台</span><span>区间运行min</span><span>停站min</span><span>区间里程km</span><span></span>
+				</div>
+				<div id="batch-stop-rows"></div>
+				<button class="ghost" id="btn-batch-add-stop">+ 添加停靠站</button>
+
+				<p class="muted" style="margin:18px 0 8px">坐席与车厢</p>
+				<div class="seat-config-row" style="font-size:12px;color:#6b7280">
+					<span>坐席码</span><span>名称</span><span>座位排列</span><span>排数</span><span>车厢号</span>
+					<span>餐车号</span><span>倍率</span><span>对号</span><span></span>
+				</div>
+				<div id="batch-seat-rows"></div>
+				<div class="inline" style="margin-top:4px">
+					<button class="ghost" id="btn-batch-add-seat">+ 添加坐席</button>
+					<button class="ghost" id="btn-batch-default-seat">恢复默认</button>
+				</div>
+
+				<div class="inline" style="margin-top:16px">
+					<button class="primary" id="btn-batch-create">批量开行</button>
+					<span class="muted" id="batch-result"></span>
+				</div>
+			</div>
+
+			<div class="card">
+				<h2>闸机管理</h2>
+				<p class="muted">游戏内拿 <b>闸机配置面板</b> 右键闸机可改配置（仅能选该闸机所在 MTR 车站的检票口）。</p>
+				<div id="gate-table" style="margin-top:12px"></div>
+			</div>
+
+			<div class="card">
+				<h2>检票控制</h2>
+				<p class="muted">正常情况下检票时间由时刻表自动控制；这里可以手动开检，或强制停检（覆盖自动窗口）。</p>
+				<div id="boarding-table" style="margin-top:12px"></div>
+			</div>
+
+			<div class="card">
+				<h2>检票校验</h2>
+				<p class="muted">按闸机相同规则校验车票。默认只读（不核销车票），需要真正核销时点「正式核销」。</p>
+				<div class="stop-row" style="grid-template-columns:1fr 1.4fr auto auto;margin-top:12px">
+					<input type="text" id="check-player" placeholder="玩家 ID，例如 Steve">
+					<select id="check-checkpoint"></select>
+					<button class="ghost" id="btn-check">模拟校验（只读）</button>
+					<button class="primary" id="btn-check-in">正式核销</button>
+				</div>
+				<div id="check-result" style="margin-top:12px"></div>
+			</div>
+
+			<div class="card">
+				<h2>票价钱包（MTR fares）</h2>
+				<div class="stop-row" style="grid-template-columns:1fr 1fr auto;margin-top:12px">
+					<input type="text" id="balance-player" placeholder="玩家 ID">
+					<input type="number" id="balance-amount" placeholder="充值金额（负数=扣款）">
+					<button class="primary" id="btn-balance">提交</button>
+				</div>
+				<div id="balance-result" style="margin-top:12px"></div>
+			</div>
+
+			<div class="card">
+				<h2>注册账号</h2>
+				<div id="account-table"></div>
+			</div>
+
+			<div class="card">
+				<h2>车票总览</h2>
+				<div id="ticket-table"></div>
+			</div>
+		</div>
+	</main>
+
+	<footer>MTR-12306 · 管理后台</footer>
+	<div id="toast" class="toast"></div>
+	<script src="/admin.js"></script>
+</body>
+
+</html>

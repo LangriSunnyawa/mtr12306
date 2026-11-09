@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "mtr12306",
+  "version": "${version}",
+  "name": "MTR-12306 铁路购票系统",
+  "description": "基于 MTR 的网页式购票系统：像 12306 一样在线购票、按车站/车次/检票口检票，配合检票闸机方块实现凭票通行。",
+  "authors": [
+    "MTR-12306"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/mtr12306/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.mtr12306.Mtr12306"
+    ],
+    "client": [
+      "com.mtr12306.client.Mtr12306Client"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "mtr": ">=4.0.5"
+  }
+}
