@@ -128,6 +128,20 @@ public class TicketGateBlock extends BlockWithEntity {
 		return new TicketGateBlockEntity(pos, state);
 	}
 
+	@Nullable
+	@Override
+	public <T extends BlockEntity> net.minecraft.block.entity.BlockEntityTicker<T> getTicker(final World world,
+			final BlockState state, final net.minecraft.block.entity.BlockEntityType<T> type) {
+		if (world.isClient()) {
+			return null;
+		}
+		return (tickWorld, tickPos, tickState, blockEntity) -> {
+			if (blockEntity instanceof TicketGateBlockEntity gate) {
+				gate.serverTick(tickWorld, tickPos, tickState);
+			}
+		};
+	}
+
 
 	/** 玩家踩进闸机所在方块时触发检票（MTR 的闸机也是这么做的） */
 	@Override

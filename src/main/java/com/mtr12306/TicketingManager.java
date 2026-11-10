@@ -1200,6 +1200,11 @@ public class TicketingManager {
 	 * 换乘闸机：一次通过同时完成「上一段出闸」+「接续车次检票」。
 	 */
 	public synchronized TransferResult transfer(final String playerNameRaw, final Checkpoint checkpoint) {
+		return transfer(playerNameRaw, checkpoint, true);
+	}
+
+	public synchronized TransferResult transfer(final String playerNameRaw, final Checkpoint checkpoint,
+			final boolean consume) {
 		final TransferResult result = new TransferResult();
 		result.checkpointName = checkpoint.name;
 		final String playerName = playerNameRaw == null ? "" : playerNameRaw.trim();
@@ -1216,7 +1221,8 @@ public class TicketingManager {
 
 		// 1) 出闸：本站到达、尚未出闸的车票
 		final List<Ticket> arrivingList = onboardTicketsAt(playerName, checkpoint.stationId);
-		final Ticket arriving = arrivingList.isEmpty() ? null : arrivingList.get(0);
+		// 同一站可能有多张未出闸的票（联程/换乘），取最近一次进站的那一段作为"刚下车"的区段
+		final Ticket arriving = arrivingList.isEmpty() ? null : arrivingList.get(arrivingList.size() - 1);
 
 		// 2) 接续：本站出发、正在检票或处于换乘窗口内的车票
 		final ZonedDateTime limit = moment.plusMinutes(Math.max(1, Mtr12306.CONFIG.transferWindowMinutes));
@@ -1272,23 +1278,29 @@ public class TicketingManager {
 
 		final long now = System.currentTimeMillis();
 		if (arriving != null) {
-			arriving.exited = true;
-			arriving.exitedAt = now;
-			arriving.exitCheckpointId = checkpoint.id;
+			if (consume) {
+				arriving.exited = true;
+				arriving.exitedAt = now;
+				arriving.exitCheckpointId = checkpoint.id;
+			}
 			result.arriving = arriving;
 			result.arrivingSegment = "换乘出闸：" + arriving.serviceNumber + " 次 "
 					+ data.stationName(arriving.fromStationId) + " → " + data.stationName(arriving.toStationId);
 		}
-		next.state = Ticket.STATE_CHECKED;
-		next.checkedAt = now;
-		next.checkedCheckpointId = checkpoint.id;
+		if (consume) {
+			next.state = Ticket.STATE_CHECKED;
+			next.checkedAt = now;
+			next.checkedCheckpointId = checkpoint.id;
+		}
 		result.next = next;
 		result.nextSegment = "接续检票：" + next.serviceNumber + " 次 " + data.stationName(next.fromStationId)
 				+ " " + next.fromTime + " → " + data.stationName(next.toStationId) + " " + next.toTime
 				+ " · " + next.seatClassLabel + " " + next.seat;
 		result.allow = true;
-		markDirty();
-		save();
+		if (consume) {
+			markDirty();
+			save();
+		}
 		return result;
 	}
 

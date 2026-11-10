@@ -1,12 +1,12 @@
 {
-  "credit": "Geometry from MTR (MIT). Textures modified for MTR-12306.",
+  "credit": "Geometry from MTR ticket_barrier (MIT). Textures modified for MTR-12306.",
   "parent": "block/block",
   "textures": {
     "particle": "mtr12306:block/gate_metal",
     "black": "mtr12306:block/gate_black",
     "yellow": "block/yellow_concrete",
     "ticket": "mtr12306:block/gate_panel",
-    "arrow": "mtr12306:block/gate_arrow_denied",
+    "arrow": "mtr12306:block/gate_arrow_white",
     "color": "block/orange_concrete",
     "yellow_glass_off": "block/yellow_stained_glass",
     "yellow_glass_on": "mtr12306:block/gate_transparent",
@@ -16,7 +16,7 @@
     {
       "from": [
         12,
-        0,
+        1,
         0
       ],
       "to": [
@@ -45,56 +45,6 @@
         "south": {
           "texture": "#particle",
           "cullface": "south"
-        }
-      }
-    },
-    {
-      "from": [
-        12,
-        0,
-        7
-      ],
-      "to": [
-        16,
-        15,
-        9
-      ],
-      "faces": {
-        "up": {
-          "uv": [
-            0,
-            0,
-            4,
-            8
-          ],
-          "texture": "#black"
-        },
-        "north": {
-          "uv": [
-            0,
-            0,
-            4,
-            15
-          ],
-          "texture": "#black"
-        },
-        "south": {
-          "uv": [
-            0,
-            0,
-            4,
-            15
-          ],
-          "texture": "#black"
-        },
-        "east": {
-          "uv": [
-            0,
-            0,
-            2,
-            15
-          ],
-          "texture": "#black"
         }
       }
     },

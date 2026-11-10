@@ -57,7 +57,8 @@ public final class ModNetworking {
 			// 只能绑定闸机所在 MTR 车站的检票口
 			final String stationName = MtrIntegration.stationNameAt(GateHelper.dimension(player.getWorld()),
 					pos.getX(), pos.getY(), pos.getZ());
-			final com.google.gson.JsonArray allowed = manager.checkpointsForStationName(stationName);
+			final com.google.gson.JsonArray allowed = stationName.isBlank()
+				? allCheckpoints(manager) : manager.checkpointsForStationName(stationName);
 			boolean found = false;
 			for (final com.google.gson.JsonElement element : allowed) {
 				final JsonObject entry = element.getAsJsonObject();
@@ -66,7 +67,7 @@ public final class ModNetworking {
 					break;
 				}
 			}
-			if (!found) {
+			if (!found && !stationName.isBlank()) {
 				player.sendMessage(Text.literal("§c该检票口不在本闸机所在的车站内"
 						+ (stationName.isEmpty() ? "（闸机不在任何 MTR 车站范围内）" : "（车站：" + stationName + "）")), false);
 				return;
@@ -86,7 +87,8 @@ public final class ModNetworking {
 		final BlockPos pos = gate.getPos();
 		final String stationName = MtrIntegration.stationNameAt(GateHelper.dimension(player.getWorld()),
 				pos.getX(), pos.getY(), pos.getZ());
-		final com.google.gson.JsonArray allowed = manager.checkpointsForStationName(stationName);
+		final com.google.gson.JsonArray allowed = stationName.isBlank()
+				? allCheckpoints(manager) : manager.checkpointsForStationName(stationName);
 
 		final PacketByteBuf buf = PacketByteBufs.create();
 		buf.writeBlockPos(pos);
@@ -102,6 +104,23 @@ public final class ModNetworking {
 					+ (platforms.isBlank() ? "" : "（站台 " + platforms + "）"));
 		}
 		ServerPlayNetworking.send(player, OPEN_GATE_CONFIG, buf);
+	}
+
+	/** 未能识别 MTR 车站时的兜底：列出全部启用的检票口，避免闸机完全无法配置 */
+	private static com.google.gson.JsonArray allCheckpoints(final TicketingManager manager) {
+		final com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+		for (final Checkpoint checkpoint : manager.data().checkpoints.values()) {
+			if (!checkpoint.enabled) {
+				continue;
+			}
+			final JsonObject json = new JsonObject();
+			json.addProperty("id", checkpoint.id);
+			json.addProperty("name", checkpoint.name);
+			json.addProperty("station", manager.data().stationName(checkpoint.stationId));
+			json.addProperty("platforms", String.join(",", checkpoint.platforms));
+			array.add(json);
+		}
+		return array;
 	}
 
 	@SuppressWarnings("unused")

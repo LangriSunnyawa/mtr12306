@@ -10,6 +10,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mtr12306.Mtr12306;
 import com.mtr12306.TicketingManager;
 import com.mtr12306.block.ModBlocks;
+import com.mtr12306.block.TicketGateBlock;
 import com.mtr12306.block.TicketGateBlockEntity;
 import com.mtr12306.data.Checkpoint;
 import com.mtr12306.data.ServiceStop;
@@ -87,6 +88,22 @@ public final class TicketCommands {
 						.then(CommandManager.argument("number", StringArgumentType.word())
 								.executes(TicketCommands::removeService))));
 
+		// 闸机判定自检：/mtr12306 gate simulate <x> <y> <z> <玩家> <in|out> [consume] [apply]
+		final LiteralArgumentBuilder<ServerCommandSource> simulateNode = CommandManager.literal("simulate")
+				.then(CommandManager.argument("x", IntegerArgumentType.integer())
+						.then(CommandManager.argument("y", IntegerArgumentType.integer())
+								.then(CommandManager.argument("z", IntegerArgumentType.integer())
+										.then(CommandManager.argument("player", StringArgumentType.word())
+												.then(simulateDirectionNode())))));
+
+		final LiteralArgumentBuilder<ServerCommandSource> mockPassNode = CommandManager.literal("mockpass")
+				.then(CommandManager.argument("x", IntegerArgumentType.integer())
+						.then(CommandManager.argument("y", IntegerArgumentType.integer())
+								.then(CommandManager.argument("z", IntegerArgumentType.integer())
+										.then(CommandManager.argument("player", StringArgumentType.word())
+												.then(CommandManager.argument("direction", StringArgumentType.word())
+														.executes(TicketCommands::mockPass))))));
+
 		root.then(CommandManager.literal("gate")
 				.then(CommandManager.literal("bind")
 						.then(CommandManager.argument("checkpoint", StringArgumentType.word())
@@ -94,7 +111,9 @@ public final class TicketCommands {
 										.executes(TicketCommands::bindGateWithMode))
 								.executes(TicketCommands::bindGate)))
 				.then(CommandManager.literal("unbind").executes(TicketCommands::unbindGate))
-				.then(CommandManager.literal("info").executes(TicketCommands::gateInfo)));
+				.then(CommandManager.literal("info").executes(TicketCommands::gateInfo))
+				.then(simulateNode)
+				.then(mockPassNode));
 
 		root.then(CommandManager.literal("boarding")
 				.then(CommandManager.literal("list").executes(TicketCommands::listBoarding))
@@ -187,7 +206,8 @@ public final class TicketCommands {
 		send(context, "§e/mtr12306 station add <名称> [站台1,站台2] | list | remove <id>");
 		send(context, "§e/mtr12306 checkpoint add <车站id> <检票口名> [站台…] | list | remove <id>");
 		send(context, "§e/mtr12306 service list|remove <车次> §7（车次/坐席/票价在网页后台配置）");
-		send(context, "§e/mtr12306 gate bind <检票口id> [ENTRY|EXIT|BOTH] | unbind | info");
+		send(context, "§e/mtr12306 gate bind <检票口id> [ENTRY|EXIT|BOTH|TRANSFER] | unbind | info");
+		send(context, "§e/mtr12306 gate simulate <x> <y> <z> <玩家> <in|out> [consume] [apply] §7闸机判定自检（apply=同时驱动闸机状态）");
 		send(context, "§e/mtr12306 boarding list | open <车次> <车站id> [分钟] | close <车次> <车站id>");
 		send(context, "§e/mtr12306 ticket buy <玩家> <车次> <出发站id> <到达站id> [坐席码]");
 		send(context, "§e/mtr12306 ticket list");
@@ -344,6 +364,100 @@ public final class TicketCommands {
 		gate.setCheckpoint(checkpointId, mode);
 		gate.syncBinding();
 		send(context, "§a闸机已设置：检票口 §e" + gate.checkpointName() + " §a模式 §e" + gate.mode());
+		return 1;
+	}
+
+	/**
+	 * 自检：对指定坐标的闸机按真实判定流程走一遍（默认只读，加 consume 才核销车票）。
+	 * 用法：/mtr12306 gate simulate <x> <y> <z> <玩家> <in|out> [consume]
+	 */
+	/** simulate 命令的 <direction> [consume] [apply] 节点 */
+	private static com.mojang.brigadier.builder.RequiredArgumentBuilder<ServerCommandSource, String> simulateDirectionNode() {
+		final com.mojang.brigadier.builder.RequiredArgumentBuilder<ServerCommandSource, String> node = CommandManager
+				.argument("direction", StringArgumentType.word())
+				.executes(context -> simulateGate(context, false, false));
+		node.then(CommandManager.literal("apply").executes(context -> simulateGate(context, false, true)));
+		node.then(CommandManager.literal("consume")
+				.executes(context -> simulateGate(context, true, false))
+				.then(CommandManager.literal("apply").executes(context -> simulateGate(context, true, true))));
+		return node;
+	}
+
+	private static int simulateGate(final CommandContext<ServerCommandSource> context, final boolean consume,
+			final boolean applyEffects) {
+		final ServerCommandSource source = context.getSource();
+		final net.minecraft.server.world.ServerWorld world = source.getWorld();
+		final BlockPos pos = new BlockPos(IntegerArgumentType.getInteger(context, "x"),
+				IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+		if (!(world.getBlockEntity(pos) instanceof TicketGateBlockEntity gate)) {
+			send(context, "§c该坐标不是检票闸机");
+			return 0;
+		}
+		final String player = StringArgumentType.getString(context, "player");
+		final String direction = StringArgumentType.getString(context, "direction");
+		final boolean inbound = !"out".equalsIgnoreCase(direction);
+		final net.minecraft.block.BlockState state = world.getBlockState(pos);
+		final TicketGateBlockEntity.Decision decision = gate.decide(world, pos, state, player, inbound, consume);
+		if (applyEffects) {
+			gate.applyDecision(world, pos, state, decision);
+		}
+		send(context, "§6闸机 §f" + pos.toShortString() + " §7模式 §f" + gate.mode() + " §7检票口 §f"
+				+ gate.checkpointName() + " §7方向 §f" + (inbound ? "进站" : "出站") + " §7（"
+				+ (consume ? "核销" : "只读") + "）");
+		send(context, decision.allowed() ? "§a判定：ALLOW（放行）" : ("§c判定：" + decision.action));
+		send(context, "§7说明：" + decision.message);
+		for (final String line : decision.detail.split("\n")) {
+			if (!line.isBlank()) {
+				send(context, "§f  " + line);
+			}
+		}
+		return 1;
+	}
+
+	/**
+	 * 自检：在闸机位置临时生成一个玩家实体，真实走一遍 handlePlayer（开闸/推回等效果会真的发生），
+	 * 结束后丢弃该临时实体。用于在没有客户端接入时验证闸机是否正常工作。
+	 */
+	private static int mockPass(final CommandContext<ServerCommandSource> context) {
+		final ServerCommandSource source = context.getSource();
+		final net.minecraft.server.world.ServerWorld world = source.getWorld();
+		final BlockPos pos = new BlockPos(IntegerArgumentType.getInteger(context, "x"),
+				IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+		if (!(world.getBlockEntity(pos) instanceof TicketGateBlockEntity gate)) {
+			send(context, "§c该坐标不是检票闸机");
+			return 0;
+		}
+		final String name = StringArgumentType.getString(context, "player");
+		final boolean inbound = !"out".equalsIgnoreCase(StringArgumentType.getString(context, "direction"));
+		final net.minecraft.block.BlockState state = world.getBlockState(pos);
+		final net.minecraft.util.math.Direction facing = state.get(TicketGateBlock.FACING);
+		final net.minecraft.util.math.Vec3d center = net.minecraft.util.math.Vec3d.ofCenter(pos);
+		final double sign = inbound ? -1.0D : 1.0D;
+		final java.util.UUID uuid = java.util.UUID.nameUUIDFromBytes(name.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		net.minecraft.server.network.ServerPlayerEntity fake = null;
+		try {
+			fake = new net.minecraft.server.network.ServerPlayerEntity(source.getServer(), world,
+					new com.mojang.authlib.GameProfile(uuid, name));
+			fake.setPos(center.x + facing.getOffsetX() * 0.45D * sign, pos.getY(),
+					center.z + facing.getOffsetZ() * 0.45D * sign);
+			final net.minecraft.util.math.Vec3d before = new net.minecraft.util.math.Vec3d(fake.getX(), fake.getY(), fake.getZ());
+			gate.handlePlayer(world, pos, state, fake);
+			final net.minecraft.util.math.Vec3d after = new net.minecraft.util.math.Vec3d(fake.getX(), fake.getY(), fake.getZ());
+			final net.minecraft.block.BlockState now = world.getBlockState(pos);
+			final String gateState = String.valueOf(now.get(TicketGateBlock.OPEN));
+			send(context, "§6临时玩家 §f" + name + " §7于 §f" + pos.toShortString() + " §7（" + (inbound ? "进站" : "出站")
+					+ "方向，模式 " + gate.mode() + "）");
+			send(context, "§7闸机状态：§f" + gateState + " §7｜位移：§f" + String.format("%.2f", before.distanceTo(after))
+					+ " §7格（>0 表示被推回）");
+			send(context, "§7判定：" + ("open".equals(gateState) ? "§a放行（已开闸）"
+					: ("pending".equals(gateState) ? "§c拒绝（红箭 + 推回）" : "§e未触发（可能是开门状态或冷却）")));
+		} catch (Throwable throwable) {
+			send(context, "§c自检失败：" + throwable);
+		} finally {
+			if (fake != null) {
+				fake.discard();
+			}
+		}
 		return 1;
 	}
 

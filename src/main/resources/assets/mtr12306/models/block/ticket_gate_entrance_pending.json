@@ -3,7 +3,8 @@
   "textures": {
     "color": "block/orange_concrete",
     "yellow_glass_off": "block/yellow_stained_glass",
-    "yellow_glass_on": "block/yellow_stained_glass",
-    "sign": "mtr12306:block/gate_arrow_denied"
+    "yellow_glass_on": "mtr12306:block/gate_transparent",
+    "sign": "mtr12306:block/gate_arrow_denied",
+    "arrow": "mtr12306:block/gate_arrow_denied"
   }
 }
