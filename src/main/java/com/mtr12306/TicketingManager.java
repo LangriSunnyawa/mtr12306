@@ -72,16 +72,18 @@ public class TicketingManager {
 		final int x;
 		final int y;
 		final int z;
-		final String checkpointId;
+		final String stationId;
+		final String checkpointIdsCsv;
 		final String mode;
 
-		PendingGate(final String dimension, final int x, final int y, final int z, final String checkpointId,
-				final String mode) {
+		PendingGate(final String dimension, final int x, final int y, final int z, final String stationId,
+				final String checkpointIdsCsv, final String mode) {
 			this.dimension = dimension;
 			this.x = x;
 			this.y = y;
 			this.z = z;
-			this.checkpointId = checkpointId;
+			this.stationId = stationId;
+			this.checkpointIdsCsv = checkpointIdsCsv;
 			this.mode = mode;
 		}
 	}
@@ -100,16 +102,24 @@ public class TicketingManager {
 
 	/** 方块实体在管理器就绪前加载时登记闸机（服务器启动早期区块就已加载） */
 	public static void queueGateRegistration(final String dimension, final int x, final int y, final int z,
-			final String checkpointId, final String mode) {
+			final String stationId, final String checkpointIdsCsv, final String mode) {
 		synchronized (PENDING_GATES) {
-			PENDING_GATES.add(new PendingGate(dimension, x, y, z, checkpointId, mode));
+			PENDING_GATES.add(new PendingGate(dimension, x, y, z, stationId, checkpointIdsCsv, mode));
 		}
 	}
 
 	private synchronized void drainPendingGates() {
 		synchronized (PENDING_GATES) {
 			for (final PendingGate pending : PENDING_GATES) {
-				bindGateIfAbsent(pending.dimension, pending.x, pending.y, pending.z, pending.checkpointId, pending.mode);
+				final List<String> ids = new ArrayList<>();
+				if (pending.checkpointIdsCsv != null && !pending.checkpointIdsCsv.isBlank()) {
+					for (final String id : pending.checkpointIdsCsv.split(",")) {
+						if (!id.isBlank()) {
+							ids.add(id.trim());
+						}
+					}
+				}
+				bindGateIfAbsent(pending.dimension, pending.x, pending.y, pending.z, pending.stationId, ids, pending.mode);
 			}
 			PENDING_GATES.clear();
 		}
@@ -363,8 +373,8 @@ public class TicketingManager {
 	public synchronized void removeCheckpoint(final String id) {
 		data.checkpoints.remove(id);
 		for (final GateBinding gate : data.gates) {
-			if (gate.checkpointId.equals(id)) {
-				gate.checkpointId = "";
+			if (gate.checkpointIds.remove(id)) {
+				markDirty();
 			}
 		}
 		markDirty();
@@ -405,35 +415,52 @@ public class TicketingManager {
 	/* ------------------------------------------------------------------ 闸机绑定 */
 
 	public synchronized GateBinding bindGate(final String dimension, final int x, final int y, final int z,
-			final String checkpointId, final String mode) {
+			final String stationId, final List<String> checkpointIds, final String mode) {
 		final String key = dimension + "@" + x + "," + y + "," + z;
 		GateBinding binding = data.gate(key);
 		if (binding == null) {
 			binding = new GateBinding(dimension, x, y, z);
 			data.gates.add(binding);
 		}
-		binding.checkpointId = checkpointId == null ? "" : checkpointId;
+		binding.stationId = stationId == null ? "" : stationId;
+		binding.checkpointIds = checkpointIds == null ? new ArrayList<>() : new ArrayList<>(checkpointIds);
 		binding.mode = mode == null || mode.isBlank() ? "ENTRY" : mode.toUpperCase();
 		markDirty();
 		return binding;
 	}
 
+	/** 兼容旧接口：按单个检票口绑定 */
+	public synchronized GateBinding bindGate(final String dimension, final int x, final int y, final int z,
+			final String checkpointId, final String mode) {
+		String station = "";
+		final List<String> ids = new ArrayList<>();
+		if (checkpointId != null && !checkpointId.isBlank()) {
+			final Checkpoint checkpoint = data.checkpoints.get(checkpointId);
+			if (checkpoint != null) {
+				station = checkpoint.stationId;
+				ids.add(checkpointId);
+			}
+		}
+		return bindGate(dimension, x, y, z, station, ids, mode);
+	}
+
 	/** 仅在绑定缺失或不同时写入（方块实体加载时会调用，避免反复落盘） */
 	public synchronized boolean bindGateIfAbsent(final String dimension, final int x, final int y, final int z,
-			final String checkpointId, final String mode) {
+			final String stationId, final List<String> checkpointIds, final String mode) {
 		final GateBinding existing = data.gate(dimension + "@" + x + "," + y + "," + z);
 		final String normalizedMode = mode == null || mode.isBlank() ? "ENTRY" : mode.toUpperCase();
-		if (existing != null && existing.checkpointId.equals(checkpointId == null ? "" : checkpointId)
-				&& existing.mode.equals(normalizedMode)) {
+		final List<String> ids = checkpointIds == null ? new ArrayList<>() : new ArrayList<>(checkpointIds);
+		if (existing != null && existing.stationId.equals(stationId == null ? "" : stationId)
+				&& existing.checkpointIds.equals(ids) && existing.mode.equals(normalizedMode)) {
 			return false;
 		}
-		bindGate(dimension, x, y, z, checkpointId, normalizedMode);
+		bindGate(dimension, x, y, z, stationId, ids, normalizedMode);
 		return true;
 	}
 
 	/** 把网页后台的绑定结果同步到已经放置在世界中的闸机方块 */
 	public void applyBindingToWorld(final String dimension, final int x, final int y, final int z,
-			final String checkpointId, final String mode) {
+			final String stationId, final List<String> checkpointIds, final String mode) {
 		if (server == null) {
 			return;
 		}
@@ -447,7 +474,7 @@ public class TicketingManager {
 					continue;
 				}
 				if (world.getBlockEntity(pos) instanceof com.mtr12306.block.TicketGateBlockEntity gate) {
-					gate.setCheckpoint(checkpointId, mode);
+					gate.setBinding(stationId, checkpointIds, mode);
 					gate.markDirty();
 					world.updateListeners(pos, world.getBlockState(pos), world.getBlockState(pos), 3);
 				}
@@ -777,6 +804,44 @@ public class TicketingManager {
 				throw new TicketingException("您已购买 " + service.number + " 次 " + travelDate + " 的车票，请勿重复购票");
 			}
 		}
+		// 12306 规则：同一乘车人不能同时购买时间冲突的车票
+		{
+			final ZonedDateTime newStart = departureInstant(serviceDate, fromStop);
+			final ZonedDateTime newEnd = arrivalInstant(serviceDate, service.stops.get(toIndex));
+			if (newStart != null) {
+				final ZonedDateTime end = newEnd != null ? newEnd : newStart.plusHours(2);
+				for (final Ticket existing : data.tickets.values()) {
+					if (!existing.isValid() || !existing.playerName.equalsIgnoreCase(player)) {
+						continue;
+					}
+					final TrainService other = data.services.get(existing.serviceNumber);
+					if (other == null) {
+						continue;
+					}
+					final LocalDate otherDate;
+					try {
+						otherDate = LocalDate.parse(instanceDateOf(existing));
+					} catch (Exception e) {
+						continue;
+					}
+					final ServiceStop otherFrom = other.stopAt(existing.fromStationId);
+					final ServiceStop otherTo = other.stopAt(existing.toStationId);
+					final ZonedDateTime otherStart = otherFrom == null ? null : departureInstant(otherDate, otherFrom);
+					final ZonedDateTime otherEnd = otherTo == null ? null : arrivalInstant(otherDate, otherTo);
+					if (otherStart == null) {
+						continue;
+					}
+					final ZonedDateTime otherEndValue = otherEnd != null ? otherEnd : otherStart.plusHours(2);
+					if (newStart.isBefore(otherEndValue) && otherStart.isBefore(end)) {
+						throw new TicketingException("行程冲突：您已购买 " + existing.serviceNumber + " 次（"
+								+ data.stationName(existing.fromStationId) + " " + existing.fromTime + " → "
+								+ data.stationName(existing.toStationId) + " " + existing.toTime
+								+ "），与本次购票时间重叠，请先退票或改签");
+					}
+				}
+			}
+		}
+
 		final SeatClassConfig requested = "STANDING".equalsIgnoreCase(seatClassCode)
 				? SeatClassConfig.standing()
 				: service.seatClass(seatClassCode == null ? "" : seatClassCode);
@@ -863,6 +928,9 @@ public class TicketingManager {
 		}
 		if (playerName != null && !playerName.isBlank() && !ticket.playerName.equalsIgnoreCase(playerName.trim())) {
 			throw new TicketingException("只能退订自己的车票");
+		}
+		if (ticket.receiptPrinted) {
+			throw new TicketingException("该车票已打印报销凭证，无法退票");
 		}
 		if (Ticket.STATE_CHECKED.equals(ticket.state)) {
 			throw new TicketingException("该车票已检票，无法退票");
@@ -963,6 +1031,12 @@ public class TicketingManager {
 		public String seat = "";
 		public int price = 0;
 		public String checkpointName = "";
+
+		/** 只读展示用摘要 */
+		public String resultSummary() {
+			return serviceNumber.isEmpty() ? checkpointName
+					: (serviceNumber + " 次 · " + seatClassLabel + " " + seat + " · " + segment);
+		}
 	}
 
 	private Checkpoint findCheckpointFor(final String stationId, final ServiceStop stop) {
@@ -1413,6 +1487,252 @@ public class TicketingManager {
 		return array;
 	}
 
+	/* ------------------------------------------------------------------ 闸机：车站 / 多检票口 */
+
+	/** 检票口列表是否允许该停靠站（空列表 = 不限） */
+	public synchronized boolean checkpointAllows(final List<String> checkpointIds, final String stationId,
+			final ServiceStop stop) {
+		if (checkpointIds == null || checkpointIds.isEmpty()) {
+			return true;
+		}
+		for (final String id : checkpointIds) {
+			final Checkpoint checkpoint = data.checkpoints.get(id);
+			if (checkpoint == null || !checkpoint.stationId.equals(stationId)) {
+				continue;
+			}
+			if (checkpoint.platforms.isEmpty() || (stop != null && checkpoint.platforms.contains(stop.platform))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** 检票口的展示名（多选或"不限"） */
+	public synchronized String checkpointLabel(final String stationId, final List<String> checkpointIds) {
+		final String station = data.stationName(stationId);
+		if (checkpointIds == null || checkpointIds.isEmpty()) {
+			return station + "（不限检票口）";
+		}
+		final List<String> names = new ArrayList<>();
+		for (final String id : checkpointIds) {
+			final Checkpoint checkpoint = data.checkpoints.get(id);
+			if (checkpoint != null) {
+				names.add(checkpoint.name);
+			}
+		}
+		return station + (names.isEmpty() ? "" : " " + String.join("/", names));
+	}
+
+	/** 由「车站 + 可选检票口」构造一个用于判定的临时检票口（空列表 = 不限） */
+	public synchronized Checkpoint virtualCheckpoint(final String stationId, final List<String> checkpointIds) {
+		final Checkpoint virtual = new Checkpoint("__gate__", stationId, data.stationName(stationId));
+		if (checkpointIds != null && !checkpointIds.isEmpty()) {
+			for (final String id : checkpointIds) {
+				final Checkpoint checkpoint = data.checkpoints.get(id);
+				if (checkpoint == null) {
+					continue;
+				}
+				if (checkpoint.platforms.isEmpty()) {
+					virtual.platforms.clear();
+					break;
+				}
+				virtual.platforms.addAll(checkpoint.platforms);
+			}
+		}
+		return virtual;
+	}
+
+	/** 进站检票（按车站 + 可选检票口集合），复用单检票口的判定逻辑 */
+	public synchronized CheckResult checkEntry(final String playerName, final String stationId,
+			final List<String> checkpointIds, final boolean consume) {
+		final Checkpoint virtual = virtualCheckpoint(stationId, checkpointIds);
+		final CheckResult result = checkPlayer(playerName, virtual, consume);
+		result.checkpointName = checkpointLabel(stationId, checkpointIds);
+		return result;
+	}
+
+	/**
+	 * 出站：只核销"最近一张"已进站未出闸的车票，并允许买短乘长
+	 * （票面到站 <= 本闸机所在站在该车次中的位置即可出闸）。
+	 */
+	public synchronized Ticket exitLatest(final String playerName, final String stationId,
+			final List<String> checkpointIds) {
+		Ticket best = null;
+		for (final Ticket ticket : data.tickets.values()) {
+			if (!ticket.playerName.equalsIgnoreCase(playerName) || !ticket.onBoard()) {
+				continue;
+			}
+			final TrainService service = data.services.get(ticket.serviceNumber);
+			if (service == null) {
+				continue;
+			}
+			final int gateIndex = service.indexOfStation(stationId);
+			final int toIndex = service.indexOfStation(ticket.toStationId);
+			if (gateIndex < 0 || toIndex < 0 || toIndex > gateIndex) {
+				continue;
+			}
+			if (!checkpointAllows(checkpointIds, stationId, service.stops.get(gateIndex))) {
+				continue;
+			}
+			if (best == null || ticket.checkedAt > best.checkedAt) {
+				best = ticket;
+			}
+		}
+		if (best != null) {
+			best.exited = true;
+			best.exitedAt = System.currentTimeMillis();
+			best.exitCheckpointId = checkpointIds == null || checkpointIds.isEmpty()
+					? "" : checkpointIds.get(0);
+			markDirty();
+			save();
+		}
+		return best;
+	}
+
+	/** 核验闸机：只核验是否存在 N 小时内出发的有效车票（不核销） */
+	public synchronized Ticket validateTicket(final String playerName, final int hours) {
+		final ZonedDateTime moment = now();
+		final ZonedDateTime limit = moment.plusHours(Math.max(1, hours));
+		Ticket best = null;
+		ZonedDateTime bestDeparture = null;
+		for (final Ticket ticket : data.tickets.values()) {
+			if (!ticket.playerName.equalsIgnoreCase(playerName) || !ticket.isValid()) {
+				continue;
+			}
+			final TrainService service = data.services.get(ticket.serviceNumber);
+			if (service == null || !service.enabled) {
+				continue;
+			}
+			final LocalDate serviceDate;
+			try {
+				serviceDate = LocalDate.parse(instanceDateOf(ticket));
+			} catch (Exception e) {
+				continue;
+			}
+			final ServiceStop from = service.stopAt(ticket.fromStationId);
+			final ZonedDateTime departure = from == null ? null : departureInstant(serviceDate, from);
+			if (departure == null || departure.isBefore(moment.minusMinutes(30)) || departure.isAfter(limit)) {
+				continue;
+			}
+			if (bestDeparture == null || departure.isBefore(bestDeparture)) {
+				best = ticket;
+				bestDeparture = departure;
+			}
+		}
+		return best;
+	}
+
+	/* ------------------------------------------------------------------ 报销凭证 */
+
+	/** 打印报销凭证：标记车票已打印（打印后不可退票） */
+	public synchronized JsonObject printReceipt(final String ticketId, final String playerName) {
+		final Ticket ticket = data.tickets.get(ticketId);
+		if (ticket == null) {
+			throw new TicketingException("车票不存在: " + ticketId);
+		}
+		if (playerName != null && !playerName.isBlank() && !ticket.playerName.equalsIgnoreCase(playerName.trim())) {
+			throw new TicketingException("只能打印自己的报销凭证");
+		}
+		if (Ticket.STATE_REFUNDED.equals(ticket.state)) {
+			throw new TicketingException("已退票的车票不能打印报销凭证");
+		}
+		if (!ticket.receiptPrinted) {
+			ticket.receiptPrinted = true;
+			ticket.receiptPrintedAt = System.currentTimeMillis();
+			markDirty();
+			save();
+		}
+		return receiptJson(ticket);
+	}
+
+	/** 报销凭证展示数据（网页与物品界面共用） */
+	public synchronized JsonObject receiptJson(final Ticket ticket) {
+		final JsonObject json = new JsonObject();
+		json.addProperty("ticketId", ticket.id);
+		json.addProperty("passenger", ticket.playerName);
+		json.addProperty("account", ticket.account == null ? "" : ticket.account);
+		json.addProperty("service", ticket.serviceNumber);
+		json.addProperty("date", ticket.date);
+		json.addProperty("fromStation", data.stationName(ticket.fromStationId));
+		json.addProperty("toStation", data.stationName(ticket.toStationId));
+		json.addProperty("fromTime", ticket.fromTime);
+		json.addProperty("toTime", ticket.toTime);
+		json.addProperty("seatClass", ticket.seatClassLabel);
+		json.addProperty("seat", ticket.seat);
+		json.addProperty("price", ticket.price);
+		json.addProperty("checkpoint", data.checkpointName(ticket.checkpointId));
+		json.addProperty("state", ticket.state);
+		json.addProperty("printed", ticket.receiptPrinted);
+		json.addProperty("printedAt", ticket.receiptPrintedAt);
+		json.addProperty("issuedAt", ticket.purchasedAt);
+		return json;
+	}
+
+	/** 售票机：本站今天可售车次（含坐席与票价） */
+	public synchronized JsonArray servicesAtStation(final String stationId) {
+		final JsonArray array = new JsonArray();
+		final LocalDate date = today();
+		final ZonedDateTime moment = now();
+		for (final TrainService service : data.services.values()) {
+			if (!service.enabled || !service.runsOn(date.toString())) {
+				continue;
+			}
+			final int fromIndex = service.indexOfStation(stationId);
+			if (fromIndex < 0) {
+				continue;
+			}
+			final ServiceStop fromStop = service.stops.get(fromIndex);
+			if (!fromStop.hasDepart() || !boardingDate(date, fromStop).equals(date)) {
+				continue;
+			}
+			final ZonedDateTime departure = departureInstant(date, fromStop);
+			if (departure == null || departure.isBefore(moment)) {
+				continue;
+			}
+			final JsonObject json = new JsonObject();
+			json.addProperty("service", service.number);
+			json.addProperty("name", service.name);
+			json.addProperty("serviceDate", date.toString());
+			json.addProperty("date", date.toString());
+			json.addProperty("depart", timeText(parseTime(fromStop.depart)));
+			json.addProperty("platform", fromStop.platform);
+			final JsonArray classes = new JsonArray();
+			int minPrice = Integer.MAX_VALUE;
+			for (final SeatClassConfig seatClass : service.effectiveSeatClasses()) {
+				for (int toIndex = fromIndex + 1; toIndex < service.stops.size(); toIndex++) {
+					final ServiceStop toStop = service.stops.get(toIndex);
+					final int price = priceOf(service, fromIndex, toIndex, seatClass);
+					final int remaining = remainingSeats(service, date.toString(), seatClass);
+					final JsonObject classJson = new JsonObject();
+					classJson.addProperty("code", seatClass.code);
+					classJson.addProperty("name", seatClass.name);
+					classJson.addProperty("toStationId", toStop.stationId);
+					classJson.addProperty("toStation", data.stationName(toStop.stationId));
+					classJson.addProperty("price", price);
+					classJson.addProperty("remaining", remaining);
+					minPrice = Math.min(minPrice, price);
+					classes.add(classJson);
+				}
+			}
+			json.add("classes", classes);
+			json.addProperty("minPrice", minPrice == Integer.MAX_VALUE ? 0 : minPrice);
+			array.add(json);
+		}
+		return array;
+	}
+
+	/** 玩家的可打印车票（未退票） */
+	public synchronized JsonArray receiptTickets(final String playerName) {
+		final JsonArray array = new JsonArray();
+		for (final Ticket ticket : ticketsOf(playerName)) {
+			if (Ticket.STATE_REFUNDED.equals(ticket.state)) {
+				continue;
+			}
+			array.add(receiptJson(ticket));
+		}
+		return array;
+	}
+
 	/* ------------------------------------------------------------------ 检票计划 / 公告 */
 
 	public static final class BoardingEntry {
@@ -1729,7 +2049,8 @@ public class TicketingManager {
 		json.add("platforms", platforms);
 		int gates = 0;
 		for (final GateBinding gate : data.gates) {
-			if (gate.checkpointId.equals(checkpoint.id)) {
+			if (gate.checkpointIds.contains(checkpoint.id)
+					|| (gate.stationId.equals(checkpoint.stationId) && gate.checkpointIds.isEmpty())) {
 				gates++;
 			}
 		}
@@ -1800,10 +2121,12 @@ public class TicketingManager {
 		json.addProperty("x", gate.x);
 		json.addProperty("y", gate.y);
 		json.addProperty("z", gate.z);
-		json.addProperty("checkpointId", gate.checkpointId);
-		json.addProperty("checkpoint", data.checkpointName(gate.checkpointId));
-		final Checkpoint checkpoint = data.checkpoint(gate.checkpointId);
-		json.addProperty("station", checkpoint == null ? "" : data.stationName(checkpoint.stationId));
+		json.addProperty("stationId", gate.stationId);
+		json.addProperty("station", data.stationName(gate.stationId));
+		json.addProperty("checkpoint", checkpointLabel(gate.stationId, gate.checkpointIds));
+		final JsonArray cpIds = new JsonArray();
+		gate.checkpointIds.forEach(cpIds::add);
+		json.add("checkpointIds", cpIds);
 		json.addProperty("mode", gate.mode);
 		json.addProperty("pos", gate.x + ", " + gate.y + ", " + gate.z);
 		return json;

@@ -43,6 +43,9 @@ public class Ticket {
 	public long purchasedAt = 0L;
 	public long checkedAt = 0L;
 	public String checkedCheckpointId = "";
+	/** 是否已打印报销凭证（打印后不可退票） */
+	public boolean receiptPrinted = false;
+	public long receiptPrintedAt = 0L;
 	/** 是否已出闸（换乘/出站闸机标记） */
 	public boolean exited = false;
 	public long exitedAt = 0L;

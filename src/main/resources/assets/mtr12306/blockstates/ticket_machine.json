@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "mtr12306:block/ticket_machine",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "mtr12306:block/ticket_machine",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "mtr12306:block/ticket_machine"
+    },
+    "facing=west": {
+      "model": "mtr12306:block/ticket_machine",
+      "y": 90
+    }
+  }
+}

@@ -604,18 +604,78 @@ async function loadMine() {
 		container.innerHTML = '<div class="card"><h2>' + escapeHtml(state.player) + " 的车票（" + tickets.length + " 张）</h2>"
 			+ tickets.map((ticket) => ticketCard(ticket)
 				+ '<div class="inline" style="margin:-6px 0 14px">'
-				+ (ticket.state === "VALID"
+				+ (ticket.state === "VALID" && !ticket.receiptPrinted
 					? '<button class="danger small" data-refund="' + escapeHtml(ticket.id) + '">退票（退回 ' + ticket.price + ' 元）</button>'
 					: "")
+				+ '<button class="ghost small" data-receipt="' + escapeHtml(ticket.id) + '">报销凭证</button>'
 				+ '<span class="muted">检票时间 ' + escapeHtml(ticket.boardingOpen || "-") + " — " + escapeHtml(ticket.boardingClose || "-") + "</span>"
 				+ "</div>").join("")
 			+ "</div>";
+		container.querySelectorAll("[data-receipt]").forEach((button) => {
+			button.addEventListener("click", () => showReceipt(button.dataset.receipt));
+		});
 		container.querySelectorAll("[data-refund]").forEach((button) => {
 			button.addEventListener("click", () => refund(button.dataset.refund));
 		});
 	} catch (error) {
 		toast(error.message, true);
 	}
+}
+
+async function showReceipt(ticketId) {
+	try {
+		const data = await api("/api/receipt?ticket=" + encodeURIComponent(ticketId));
+		showModal(`
+			<h3>报销凭证</h3>
+			${receiptHtml(data)}
+			<div class="inline" style="margin-top:12px">
+				<button class="primary" id="receipt-print" ${data.printed ? "disabled" : ""}>${data.printed ? "已打印" : "打印报销凭证"}</button>
+				<button class="ghost" id="receipt-close">关闭</button>
+			</div>
+			<p class="muted" style="margin-top:8px">打印后该车票不能退票；游戏内售票机同样可以打印。</p>
+		`);
+		$("#receipt-close").addEventListener("click", hideModal);
+		const printBtn = $("#receipt-print");
+		if (printBtn && !data.printed) {
+			printBtn.addEventListener("click", async () => {
+				try {
+					const result = await api("/api/receipt/print", { ticket: ticketId });
+					toast("报销凭证已打印");
+					hideModal();
+					loadMine();
+					showReceipt(result.ticketId);
+				} catch (error) {
+					toast(error.message, true);
+				}
+			});
+		}
+	} catch (error) {
+		toast(error.message, true);
+	}
+}
+
+function receiptHtml(data) {
+	const printed = data.printed ? new Date(data.printedAt).toLocaleString() : "-";
+	return `<div class="blue-ticket">
+		<div class="bt-head"><span>中国铁路 · 电子客票报销凭证</span><span>${escapeHtml(data.state)}</span></div>
+		<div class="bt-grid">
+			<div><span>车次</span><b>${escapeHtml(data.service)} 次</b></div>
+			<div><span>乘车日期</span><b>${escapeHtml(data.date)}</b></div>
+			<div><span>出发站</span><b>${escapeHtml(data.fromStation)} ${escapeHtml(data.fromTime)}</b></div>
+			<div><span>到达站</span><b>${escapeHtml(data.toStation)} ${escapeHtml(data.toTime)}</b></div>
+			<div><span>乘车人</span><b>${escapeHtml(data.passenger)}</b></div>
+			<div><span>席位</span><b>${escapeHtml(data.seatClass)} ${escapeHtml(data.seat)}</b></div>
+			<div><span>票价</span><b>￥${escapeHtml(data.price)}</b></div>
+			<div><span>检票口</span><b>${escapeHtml(data.checkpoint || "-")}</b></div>
+			<div><span>票号</span><b>${escapeHtml(data.ticketId)}</b></div>
+			<div><span>账号</span><b>${escapeHtml(data.account || "-")}</b></div>
+		</div>
+		<div class="bt-foot">
+			<span>仅供报销使用 · 打印后不可退票</span>
+			<span class="bt-seal">电子客票</span>
+			<span>开具时间 ${escapeHtml(printed)}</span>
+		</div>
+	</div>`;
 }
 
 async function refund(ticketId) {

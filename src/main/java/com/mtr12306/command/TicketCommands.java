@@ -363,7 +363,7 @@ public final class TicketCommands {
 		}
 		gate.setCheckpoint(checkpointId, mode);
 		gate.syncBinding();
-		send(context, "§a闸机已设置：检票口 §e" + gate.checkpointName() + " §a模式 §e" + gate.mode());
+		send(context, "§a闸机已设置：检票口 §e" + gate.bindingLabel() + " §a模式 §e" + gate.mode());
 		return 1;
 	}
 
@@ -398,11 +398,8 @@ public final class TicketCommands {
 		final boolean inbound = !"out".equalsIgnoreCase(direction);
 		final net.minecraft.block.BlockState state = world.getBlockState(pos);
 		final TicketGateBlockEntity.Decision decision = gate.decide(world, pos, state, player, inbound, consume);
-		if (applyEffects) {
-			gate.applyDecision(world, pos, state, decision);
-		}
 		send(context, "§6闸机 §f" + pos.toShortString() + " §7模式 §f" + gate.mode() + " §7检票口 §f"
-				+ gate.checkpointName() + " §7方向 §f" + (inbound ? "进站" : "出站") + " §7（"
+				+ gate.bindingLabel() + " §7方向 §f" + (inbound ? "进站" : "出站") + " §7（"
 				+ (consume ? "核销" : "只读") + "）");
 		send(context, decision.allowed() ? "§a判定：ALLOW（放行）" : ("§c判定：" + decision.action));
 		send(context, "§7说明：" + decision.message);
@@ -441,7 +438,7 @@ public final class TicketCommands {
 			fake.setPos(center.x + facing.getOffsetX() * 0.45D * sign, pos.getY(),
 					center.z + facing.getOffsetZ() * 0.45D * sign);
 			final net.minecraft.util.math.Vec3d before = new net.minecraft.util.math.Vec3d(fake.getX(), fake.getY(), fake.getZ());
-			gate.handlePlayer(world, pos, state, fake);
+			gate.tryPass(world, pos, state, fake);
 			final net.minecraft.util.math.Vec3d after = new net.minecraft.util.math.Vec3d(fake.getX(), fake.getY(), fake.getZ());
 			final net.minecraft.block.BlockState now = world.getBlockState(pos);
 			final String gateState = String.valueOf(now.get(TicketGateBlock.OPEN));
@@ -469,7 +466,7 @@ public final class TicketCommands {
 			return 0;
 		}
 		if (player.getWorld().getBlockEntity(pos) instanceof TicketGateBlockEntity gate) {
-			send(context, "§a闸机 §7" + pos.toShortString() + " §a检票口：§e" + gate.checkpointName()
+			send(context, "§a闸机 §7" + pos.toShortString() + " §a检票口：§e" + gate.bindingLabel()
 					+ " §a模式：§e" + gate.mode() + " §7（ENRTY=进站检票 EXIT=出站放行 BOTH=双向）");
 		}
 		return 1;

@@ -31,7 +31,7 @@ public class GateItem extends BlockItem {
 			final ItemStack stack, final BlockState state) {
 		final boolean result = super.postPlacement(pos, world, player, stack, state);
 		if (!world.isClient() && world.getBlockEntity(pos) instanceof TicketGateBlockEntity gate) {
-			gate.setCheckpoint(gate.checkpointId(), mode);
+			gate.setBinding(gate.stationId(), gate.checkpointIds(), mode);
 			gate.syncBinding();
 		}
 		return result;

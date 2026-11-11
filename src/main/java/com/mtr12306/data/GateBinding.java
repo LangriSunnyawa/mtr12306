@@ -1,16 +1,22 @@
 package com.mtr12306.data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * 闸机与检票口的绑定关系。
- * 闸机方块自身也会保存一份，这里保存的是供网页后台查看/修改的副本。
+ * 闸机与车站/检票口的绑定关系。
+ * 闸机绑定到「车站」，检票口可多选；不选任何检票口表示该站所有检票口都可用（不限）。
  */
 public class GateBinding {
 	public String dimension = "";
 	public int x;
 	public int y;
 	public int z;
-	public String checkpointId = "";
-	/** ENTRY（进站检票）/ EXIT（出站）/ BOTH（双向检票） */
+	/** 车站 id */
+	public String stationId = "";
+	/** 检票口 id 列表（空 = 不限） */
+	public List<String> checkpointIds = new ArrayList<>();
+	/** ENTRY / EXIT / BOTH / TRANSFER / VALIDATE */
 	public String mode = "ENTRY";
 
 	public GateBinding() {

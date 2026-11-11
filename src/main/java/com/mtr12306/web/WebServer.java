@@ -197,6 +197,24 @@ public class WebServer {
 			case "/api/purchase" -> writeJson(exchange, 200, purchase(exchange, body));
 			case "/api/tickets" -> writeJson(exchange, 200, ticketsOf(exchange));
 			case "/api/refund" -> writeJson(exchange, 200, refund(exchange, body));
+			case "/api/receipt" -> {
+				final String ticketId = firstNonBlank(text(body, "ticket"), queryParam(exchange, "ticket"));
+				final Ticket ticket = manager.data().tickets.get(ticketId);
+				if (ticket == null) {
+					throw new TicketingException("车票不存在: " + ticketId);
+				}
+				requirePlayer(exchange, ticket.playerName);
+				writeJson(exchange, 200, manager.receiptJson(ticket));
+			}
+			case "/api/receipt/print" -> {
+				final String ticketId = text(body, "ticket");
+				final Ticket ticket = manager.data().tickets.get(ticketId);
+				if (ticket == null) {
+					throw new TicketingException("车票不存在: " + ticketId);
+				}
+				final String player = requirePlayer(exchange, ticket.playerName);
+				writeJson(exchange, 200, manager.printReceipt(ticketId, player));
+			}
 			case "/api/admin/login" -> writeJson(exchange, 200, adminLogin(exchange, body));
 			case "/api/admin/mtr/stations" -> requireAdmin(exchange, () -> {
 				final JsonObject result = new JsonObject();
@@ -504,9 +522,10 @@ public class WebServer {
 			}
 			case "/api/admin/gate" -> {
 				final GateBinding binding = manager.bindGate(text(body, "dimension"), intValue(body, "x"),
-						intValue(body, "y"), intValue(body, "z"), text(body, "checkpointId"), text(body, "mode"));
-				manager.applyBindingToWorld(binding.dimension, binding.x, binding.y, binding.z, binding.checkpointId,
-						binding.mode);
+						intValue(body, "y"), intValue(body, "z"), text(body, "stationId"),
+						stringList(body, "checkpointIds"), text(body, "mode"));
+				manager.applyBindingToWorld(binding.dimension, binding.x, binding.y, binding.z, binding.stationId,
+						binding.checkpointIds, binding.mode);
 				writeJson(exchange, 200, manager.gateJson(binding));
 			}
 			case "/api/admin/gate/delete" -> {

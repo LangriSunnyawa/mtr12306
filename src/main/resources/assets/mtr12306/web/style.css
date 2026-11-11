@@ -633,3 +633,60 @@ footer {
   margin-bottom: 8px;
   align-items: center;
 }
+/* ---------- 报销凭证（国铁蓝票） ---------- */
+.blue-ticket {
+  background: #dcebf8;
+  border: 1px solid #8fa9c0;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 13px;
+  color: #16233a;
+}
+
+.bt-head {
+  background: #1b2b41;
+  color: #fff;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  letter-spacing: 1px;
+}
+
+.bt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  padding: 14px 12px;
+}
+
+.bt-grid span {
+  color: #5a6b80;
+  margin-right: 6px;
+}
+
+.bt-grid b {
+  color: #101a2b;
+}
+
+.bt-foot {
+  border-top: 1px dashed #8fa9c0;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #4b5a6d;
+  font-size: 12px;
+}
+
+.bt-seal {
+  color: #c8323c;
+  border: 2px solid #c8323c;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transform: rotate(-12deg);
+}

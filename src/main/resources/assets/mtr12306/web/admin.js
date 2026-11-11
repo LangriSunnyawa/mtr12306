@@ -82,6 +82,7 @@ async function refresh() {
 		renderOverview();
 		renderStationOptions();
 		renderStations();
+		renderStationTabs();
 		renderCheckpoints();
 		renderServices();
 		renderGates();
@@ -146,6 +147,82 @@ function renderStations() {
 			try {
 				await apiAdmin("/api/admin/station/delete", { id: button.dataset.delStation });
 				toast("车站已删除");
+				refresh();
+			} catch (error) {
+				toast(error.message, true);
+			}
+		});
+	});
+}
+
+let activeStationTab = "";
+
+function renderStationTabs() {
+	const tabs = $("#station-tabs");
+	const panel = $("#station-panel");
+	if (!tabs || !panel) {
+		return;
+	}
+	const stations = admin.data.stations;
+	if (!stations.length) {
+		tabs.innerHTML = "";
+		panel.innerHTML = '<div class="empty">还没有车站</div>';
+		return;
+	}
+	if (!activeStationTab || !stations.some((station) => station.id === activeStationTab)) {
+		activeStationTab = stations[0].id;
+	}
+	tabs.innerHTML = stations.map((station) =>
+		'<button class="chip' + (station.id === activeStationTab ? " active" : "") + '" data-station-tab="'
+		+ escapeHtml(station.id) + '">' + escapeHtml(station.name) + "</button>").join(" ");
+	tabs.querySelectorAll("[data-station-tab]").forEach((button) => {
+		button.addEventListener("click", () => {
+			activeStationTab = button.dataset.stationTab;
+			renderStationTabs();
+		});
+	});
+	const station = stations.find((entry) => entry.id === activeStationTab);
+	const rows = station.checkpoints.map((checkpoint) => "<tr>"
+		+ "<td>" + escapeHtml(checkpoint.id) + "</td>"
+		+ "<td>" + escapeHtml(checkpoint.name) + "</td>"
+		+ '<td class="muted">' + escapeHtml((checkpoint.platforms || []).join(", ") || "全部站台") + "</td>"
+		+ "<td>" + checkpoint.gates + "</td>"
+		+ "<td>" + (checkpoint.enabled ? '<span class="badge green">启用</span>' : '<span class="badge gray">停用</span>') + "</td>"
+		+ '<td><button class="danger small" data-tab-del-cp="' + escapeHtml(checkpoint.id) + '">删除</button></td>'
+		+ "</tr>").join("");
+	panel.innerHTML = '<div class="card" style="background:#fafcff;box-shadow:none;border:1px solid #e3e6ea">'
+		+ "<h2>" + escapeHtml(station.name) + "（" + escapeHtml(station.id) + "）</h2>"
+		+ '<p class="muted">站台：' + escapeHtml((station.platforms || []).join(", ") || "-")
+		+ " · 检票口 " + station.checkpoints.length + " 个</p>"
+		+ '<div class="stop-row" style="grid-template-columns:1fr 1.4fr auto;margin:10px 0">'
+		+ '<input type="text" id="tab-cp-name" placeholder="检票口名称，如 A1">'
+		+ '<input type="text" id="tab-cp-platforms" placeholder="负责站台（逗号分隔，留空=全部）">'
+		+ '<button class="primary" id="tab-cp-add">为本站新增检票口</button></div>'
+		+ (station.checkpoints.length
+			? "<table><thead><tr><th>ID</th><th>名称</th><th>站台</th><th>闸机</th><th>状态</th><th>操作</th></tr></thead><tbody>" + rows + "</tbody></table>"
+			: '<div class="empty">本站还没有检票口</div>')
+		+ "</div>";
+	$("#tab-cp-add").addEventListener("click", async () => {
+		try {
+			await apiAdmin("/api/admin/checkpoint", {
+				stationId: activeStationTab,
+				name: $("#tab-cp-name").value.trim(),
+				platforms: ($("#tab-cp-platforms").value || "").split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+			});
+			toast("检票口已创建");
+			refresh();
+		} catch (error) {
+			toast(error.message, true);
+		}
+	});
+	panel.querySelectorAll("[data-tab-del-cp]").forEach((button) => {
+		button.addEventListener("click", async () => {
+			if (!confirm("确定删除该检票口？")) {
+				return;
+			}
+			try {
+				await apiAdmin("/api/admin/checkpoint/delete", { id: button.dataset.tabDelCp });
+				toast("检票口已删除");
 				refresh();
 			} catch (error) {
 				toast(error.message, true);

@@ -11,98 +11,135 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * 闸机配置界面：选择该闸机所属检票口（仅限闸机所在 MTR 车站）与通行模式。
+ * 闸机配置：选择所属车站（受闸机所在 MTR 车站限制）、多选检票口（不选 = 不限）、通行模式。
  */
 public class GateConfigScreen extends Screen {
-	private static final int PER_PAGE = 5;
-	private static final String[] MODES = {"ENTRY", "EXIT", "BOTH", "TRANSFER"};
+	private static final String[] MODES = {"ENTRY", "EXIT", "BOTH", "TRANSFER", "VALIDATE"};
+	private static final String[] MODE_NAMES = {"进站检票", "出站放行", "双向", "换乘", "车票核验"};
 
 	private final BlockPos pos;
-	private final String stationName;
-	private final List<String[]> options;
-	private String selected;
+	private final String mtrStation;
+	private final List<String[]> stations = new ArrayList<>();
+	private final List<String[]> checkpoints = new ArrayList<>();
+	private final Set<String> selected = new LinkedHashSet<>();
+	private String stationId;
 	private String mode;
-	private int page = 0;
 
-	public GateConfigScreen(final BlockPos pos, final String currentCheckpointId, final String currentMode,
-			final String stationName, final List<String[]> options) {
+	public GateConfigScreen(final BlockPos pos, final String stationId, final String mode, final String mtrStation,
+			final List<String[]> stations, final List<String[]> checkpoints, final List<String> selectedIds) {
 		super(Text.literal("闸机配置"));
 		this.pos = pos;
-		this.selected = currentCheckpointId == null ? "" : currentCheckpointId;
-		this.mode = currentMode == null || currentMode.isBlank() ? "ENTRY" : currentMode;
-		this.stationName = stationName == null ? "" : stationName;
-		this.options = options == null ? new ArrayList<>() : options;
+		this.stationId = stationId == null ? "" : stationId;
+		this.mode = mode == null || mode.isBlank() ? "ENTRY" : mode;
+		this.mtrStation = mtrStation == null ? "" : mtrStation;
+		this.stations.addAll(stations);
+		this.checkpoints.addAll(checkpoints);
+		this.selected.addAll(selectedIds);
+		if (this.stationId.isEmpty() && !this.stations.isEmpty()) {
+			this.stationId = this.stations.get(0)[0];
+		}
 	}
 
-	private static String modeText(final String mode) {
-		return switch (mode) {
-			case "EXIT" -> "出站放行";
-			case "BOTH" -> "双向检票";
-			case "TRANSFER" -> "换乘闸机";
-			default -> "进站检票";
-		};
+	private int modeIndex() {
+		for (int i = 0; i < MODES.length; i++) {
+			if (MODES[i].equals(mode)) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	private List<String[]> checkpointsOfStation() {
+		final List<String[]> list = new ArrayList<>();
+		for (final String[] cp : checkpoints) {
+			if (cp[1].equals(stationId)) {
+				list.add(cp);
+			}
+		}
+		return list;
 	}
 
 	@Override
 	protected void init() {
-		final int centerX = width / 2;
-		int y = 56;
+		final int cx = width / 2;
+		int y = 44;
 
-		addDrawableChild(ButtonWidget.builder(Text.literal("通行模式：" + modeText(mode)), button -> {
-			int index = 0;
-			for (int i = 0; i < MODES.length; i++) {
-				if (MODES[i].equals(mode)) {
-					index = i;
+		// 车站（识别到 MTR 车站时只有一项）
+		if (stations.size() > 1) {
+			addDrawableChild(ButtonWidget.builder(Text.literal("车站：" + stationName()), button -> {
+				int index = 0;
+				for (int i = 0; i < stations.size(); i++) {
+					if (stations.get(i)[0].equals(stationId)) {
+						index = i;
+					}
 				}
-			}
-			mode = MODES[(index + 1) % MODES.length];
-			button.setMessage(Text.literal("通行模式：" + modeText(mode)));
-		}).dimensions(centerX - 110, y, 220, 20).build());
-		y += 26;
-
-		final int pages = Math.max(1, (options.size() + PER_PAGE - 1) / PER_PAGE);
-		page = Math.min(page, pages - 1);
-		final int start = page * PER_PAGE;
-		for (int i = 0; i < PER_PAGE && start + i < options.size(); i++) {
-			final String[] option = options.get(start + i);
-			final String id = option[0];
-			final String label = option[1];
-			final boolean isSelected = id.equals(selected);
-			addDrawableChild(ButtonWidget.builder(Text.literal((isSelected ? "§a✔ " : "") + label), button -> {
-				selected = id;
+				stationId = stations.get((index + 1) % stations.size())[0];
+				selected.clear();
 				clearAndInit();
-			}).dimensions(centerX - 150, y, 300, 20).build());
-			y += 23;
+			}).dimensions(cx - 150, y, 300, 20).build());
 		}
+		y += 24;
 
-		if (pages > 1) {
-			final int pageY = height - 56;
-			addDrawableChild(ButtonWidget.builder(Text.literal("◀"), button -> {
-				page = (page - 1 + pages) % pages;
+		addDrawableChild(ButtonWidget.builder(Text.literal("通行模式：" + MODE_NAMES[modeIndex()]), button -> {
+			mode = MODES[(modeIndex() + 1) % MODES.length];
+			button.setMessage(Text.literal("通行模式：" + MODE_NAMES[modeIndex()]));
+		}).dimensions(cx - 150, y, 300, 20).build());
+		y += 24;
+
+		addDrawableChild(ButtonWidget.builder(Text.literal("§e不限检票口（清空选择）"), button -> {
+			selected.clear();
+			clearAndInit();
+		}).dimensions(cx - 150, y, 300, 20).build());
+		y += 24;
+
+		final List<String[]> list = checkpointsOfStation();
+		int shown = 0;
+		for (final String[] cp : list) {
+			if (shown >= 8) {
+				break;
+			}
+			final boolean on = selected.contains(cp[0]);
+			addDrawableChild(ButtonWidget.builder(Text.literal((on ? "§a✔ " : "§7") + cp[2]), button -> {
+				if (selected.contains(cp[0])) {
+					selected.remove(cp[0]);
+				} else {
+					selected.add(cp[0]);
+				}
 				clearAndInit();
-			}).dimensions(centerX - 152, pageY, 40, 20).build());
-			addDrawableChild(ButtonWidget.builder(Text.literal("第 " + (page + 1) + "/" + pages + " 页"), button -> {
-			}).dimensions(centerX - 108, pageY, 216, 20).build());
-			addDrawableChild(ButtonWidget.builder(Text.literal("▶"), button -> {
-				page = (page + 1) % pages;
-				clearAndInit();
-			}).dimensions(centerX + 112, pageY, 40, 20).build());
+			}).dimensions(cx - 150, y, 300, 20).build());
+			y += 22;
+			shown++;
 		}
 
 		addDrawableChild(ButtonWidget.builder(Text.literal("§a保存"), button -> save())
-				.dimensions(centerX - 152, height - 28, 148, 20).build());
+				.dimensions(cx - 152, height - 28, 148, 20).build());
 		addDrawableChild(ButtonWidget.builder(Text.literal("§c取消"), button -> close())
-				.dimensions(centerX + 4, height - 28, 148, 20).build());
+				.dimensions(cx + 4, height - 28, 148, 20).build());
+	}
+
+	private String stationName() {
+		for (final String[] station : stations) {
+			if (station[0].equals(stationId)) {
+				return station[1];
+			}
+		}
+		return "未选择";
 	}
 
 	private void save() {
 		final PacketByteBuf buf = PacketByteBufs.create();
 		buf.writeBlockPos(pos);
-		buf.writeString(selected);
+		buf.writeString(stationId);
 		buf.writeString(mode);
+		buf.writeInt(selected.size());
+		for (final String id : selected) {
+			buf.writeString(id);
+		}
 		ClientPlayNetworking.send(ModNetworking.BIND_GATE, buf);
 		close();
 	}
@@ -110,25 +147,16 @@ public class GateConfigScreen extends Screen {
 	@Override
 	public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
 		renderBackground(context);
-		context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF);
+		context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 12, 0xFFFFFF);
 		context.drawCenteredTextWithShadow(textRenderer,
-				Text.literal("§7闸机坐标 " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()), width / 2, 30, 0xAAAAAA);
-		if (stationName.isEmpty()) {
-			context.drawCenteredTextWithShadow(textRenderer,
-					Text.literal("§c此闸机不在任何 MTR 车站范围内，无法选择检票口"), width / 2, 44, 0xFF5555);
-		} else {
-			context.drawCenteredTextWithShadow(textRenderer,
-					Text.literal("§b所在车站：" + stationName), width / 2, 44, 0x55FFFF);
-		}
-		if (options.isEmpty()) {
-			context.drawCenteredTextWithShadow(textRenderer,
-					Text.literal(stationName.isEmpty()
-							? "§7请先把闸机放到 MTR 车站范围内"
-							: "§7该车站还没有检票口（请在网页后台为同名车站创建检票口）"),
-					width / 2, 80, 0xAAAAAA);
+				Text.literal("§7闸机 " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "  §b"
+						+ (mtrStation.isEmpty() ? "（未识别到 MTR 车站）" : "MTR 车站：" + mtrStation)), width / 2, 26, 0xAAAAAA);
+		if (stations.size() <= 1) {
+			context.drawCenteredTextWithShadow(textRenderer, Text.literal("§f车站：" + stationName()), width / 2, 46, 0xFFFFFF);
 		}
 		context.drawCenteredTextWithShadow(textRenderer,
-				Text.literal("§7当前选择：" + (selected.isEmpty() ? "未绑定" : selected)), width / 2, height - 44, 0xFFFFFF);
+				Text.literal("§7已选检票口：" + (selected.isEmpty() ? "§e不限" : "§f" + selected.size() + " 个")),
+				width / 2, height - 44, 0xFFFFFF);
 		super.render(context, mouseX, mouseY, delta);
 	}
 

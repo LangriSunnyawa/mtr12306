@@ -54,6 +54,10 @@ public class TicketingConfig {
 	public int farePerStopFallback = 3;
 	/** 换乘闸机：接续车次可检票的时间窗口（分钟，含开检前） */
 	public int transferWindowMinutes = 30;
+	/** 核验闸机：允许提前多少小时内的车票通过核验 */
+	public int validateHours = 12;
+	/** 闸机放行后保持开门的时间（秒） */
+	public int gateOpenSeconds = 4;
 	/** 全局票价倍率 */
 	public double fareMultiplier = 1.0D;
 	/** 是否启用付费（从 MTR 的 fares 计分板扣款） */
@@ -106,6 +110,8 @@ public class TicketingConfig {
 				config.farePerKm = decimal(json, "farePerKm", config.farePerKm);
 				config.farePerStopFallback = integer(json, "farePerStopFallback", config.farePerStopFallback);
 				config.transferWindowMinutes = integer(json, "transferWindowMinutes", config.transferWindowMinutes);
+				config.validateHours = integer(json, "validateHours", config.validateHours);
+				config.gateOpenSeconds = integer(json, "gateOpenSeconds", config.gateOpenSeconds);
 				config.fareMultiplier = decimal(json, "fareMultiplier", config.fareMultiplier);
 				config.requirePayment = bool(json, "requirePayment", config.requirePayment);
 				config.fareObjective = str(json, "fareObjective", config.fareObjective);
