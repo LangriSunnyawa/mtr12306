@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "mtr12306:block/station_board"
+    },
+    "facing=east": {
+      "model": "mtr12306:block/station_board",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "mtr12306:block/station_board",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "mtr12306:block/station_board",
+      "y": 270
+    }
+  }
+}

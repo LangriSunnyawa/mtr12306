@@ -11,5 +11,9 @@
   "item.mtr12306.receipt": "Reimbursement Receipt",
   "item.mtr12306.receipt.empty": "No ticket data",
   "item.mtr12306.receipt.hint": "Right-click to view",
-  "itemGroup.mtr12306.gates": "MTR-12306 Ticket Gates"
+  "itemGroup.mtr12306.gates": "MTR-12306 Ticket Gates",
+  "block.mtr12306.station_board": "Station Departure Board",
+  "item.mtr12306.station_board": "Station Departure Board",
+  "block.mtr12306.broadcaster": "Station Broadcaster",
+  "item.mtr12306.broadcaster": "Station Broadcaster"
 }

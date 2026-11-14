@@ -25,6 +25,9 @@ import java.util.List;
 public final class ModNetworking {
 	public static final Identifier OPEN_GATE_CONFIG = Mtr12306.id("open_gate_config");
 	public static final Identifier BIND_GATE = Mtr12306.id("bind_gate");
+	public static final Identifier OPEN_BOARD_CONFIG = Mtr12306.id("open_board_config");
+	public static final Identifier BIND_BOARD = Mtr12306.id("bind_board");
+	public static final Identifier BIND_BROADCAST = Mtr12306.id("bind_broadcast");
 
 	/** 售票机：服务端 → 客户端（打开界面并带上可售车次与我的车票） */
 	public static final Identifier OPEN_MACHINE = Mtr12306.id("open_machine");
@@ -49,6 +52,39 @@ public final class ModNetworking {
 				ids.add(buf.readString(32767));
 			}
 			server.execute(() -> applyBinding(player, pos, stationId, ids, mode));
+		});
+
+		ServerPlayNetworking.registerGlobalReceiver(BIND_BOARD, (server, player, handler, buf, responseSender) -> {
+			final BlockPos pos = buf.readBlockPos();
+			final String stationId = buf.readString(32767);
+			final int width = buf.readInt();
+			final int height = buf.readInt();
+			final int count = buf.readInt();
+			final List<String> ids = new ArrayList<>();
+			for (int i = 0; i < count; i++) {
+				ids.add(buf.readString(32767));
+			}
+			server.execute(() -> applyBoardBinding(player, pos, stationId, width, height, ids));
+		});
+
+		ServerPlayNetworking.registerGlobalReceiver(BIND_BROADCAST, (server, player, handler, buf, responseSender) -> {
+			final BlockPos pos = buf.readBlockPos();
+			final String stationId = buf.readString(32767);
+			final int count = buf.readInt();
+			final List<String> ids = new ArrayList<>();
+			for (int i = 0; i < count; i++) {
+				ids.add(buf.readString(32767));
+			}
+			server.execute(() -> {
+				if (!player.hasPermissionLevel(2)) {
+					player.sendMessage(Text.literal("§c配置广播器需要 OP 权限"), false);
+					return;
+				}
+				if (player.getWorld().getBlockEntity(pos) instanceof com.mtr12306.block.BroadcasterBlockEntity broadcaster) {
+					broadcaster.setBinding(stationId, ids);
+					player.sendMessage(Text.literal("§a广播器已更新：§f" + broadcaster.bindingLabel()), false);
+				}
+			});
 		});
 
 		ServerPlayNetworking.registerGlobalReceiver(MACHINE_BUY, (server, player, handler, buf, responseSender) -> {
@@ -145,6 +181,122 @@ public final class ModNetworking {
 			buf.writeString(id);
 		}
 		ServerPlayNetworking.send(player, OPEN_GATE_CONFIG, buf);
+	}
+
+	private static void applyBoardBinding(final ServerPlayerEntity player, final BlockPos pos, final String stationId,
+			final int width, final int height, final List<String> checkpointIds) {
+		if (!player.hasPermissionLevel(2)) {
+			player.sendMessage(Text.literal("§c配置大屏需要 OP 权限"), false);
+			return;
+		}
+		if (!(player.getWorld().getBlockEntity(pos) instanceof com.mtr12306.block.StationBoardBlockEntity board)) {
+			return;
+		}
+		if (!player.getWorld().getServer().getOverworld().equals(player.getWorld())
+				&& !(player.getWorld() instanceof net.minecraft.server.world.ServerWorld)) {
+			return;
+		}
+		final boolean ok = board.applySize(player.getServerWorld(), width, height, stationId, checkpointIds);
+		player.sendMessage(Text.literal(ok
+				? ("§a大屏已更新：§f" + board.bindingLabel() + " §7尺寸 §f" + width + "×" + height)
+				: "§c该区域放不下这么大的屏幕（被其他方块占用）"), false);
+	}
+
+	/** 打开大屏配置界面 */
+	public static void openBoardConfig(final ServerPlayerEntity player,
+			final com.mtr12306.block.StationBoardBlockEntity board) {
+		final TicketingManager manager = Mtr12306.manager();
+		if (manager == null) {
+			return;
+		}
+		final BlockPos pos = board.getPos();
+		final String mtrStation = MtrIntegration.stationNameAt(GateHelper.dimension(player.getWorld()),
+				pos.getX(), pos.getY(), pos.getZ());
+		final List<Station> stations = new ArrayList<>();
+		for (final Station station : manager.data().stations.values()) {
+			if (mtrStation.isBlank() || station.name.equalsIgnoreCase(mtrStation)
+					|| station.mtrStation.equalsIgnoreCase(mtrStation)) {
+				stations.add(station);
+			}
+		}
+		final PacketByteBuf buf = PacketByteBufs.create();
+		buf.writeBlockPos(pos);
+		buf.writeByte(0);
+		buf.writeString(board.stationId());
+		buf.writeString(board.rightDirectionName());
+		buf.writeInt(board.width());
+		buf.writeInt(board.height());
+		buf.writeInt(stations.size());
+		for (final Station station : stations) {
+			buf.writeString(station.id);
+			buf.writeString(station.name);
+		}
+		final List<Checkpoint> checkpoints = new ArrayList<>();
+		for (final Checkpoint checkpoint : manager.data().checkpoints.values()) {
+			if (checkpoint.enabled) {
+				checkpoints.add(checkpoint);
+			}
+		}
+		buf.writeInt(checkpoints.size());
+		for (final Checkpoint checkpoint : checkpoints) {
+			buf.writeString(checkpoint.id);
+			buf.writeString(checkpoint.stationId);
+			buf.writeString(checkpoint.name + (checkpoint.platforms.isEmpty() ? "（全部站台）"
+					: "（站台 " + String.join(",", checkpoint.platforms) + "）"));
+		}
+		buf.writeInt(board.checkpointIds().size());
+		for (final String id : board.checkpointIds()) {
+			buf.writeString(id);
+		}
+		ServerPlayNetworking.send(player, OPEN_BOARD_CONFIG, buf);
+	}
+
+	/** 打开广播器配置界面（复用大屏配置界面） */
+	public static void openBroadcastConfig(final ServerPlayerEntity player,
+			final com.mtr12306.block.BroadcasterBlockEntity broadcaster) {
+		final TicketingManager manager = Mtr12306.manager();
+		if (manager == null) {
+			return;
+		}
+		final BlockPos pos = broadcaster.getPos();
+		final String mtrStation = MtrIntegration.stationNameAt(GateHelper.dimension(player.getWorld()),
+				pos.getX(), pos.getY(), pos.getZ());
+		final List<Station> stations = new ArrayList<>();
+		for (final Station station : manager.data().stations.values()) {
+			if (mtrStation.isBlank() || station.name.equalsIgnoreCase(mtrStation)
+					|| station.mtrStation.equalsIgnoreCase(mtrStation)) {
+				stations.add(station);
+			}
+		}
+		final PacketByteBuf buf = PacketByteBufs.create();
+		buf.writeBlockPos(pos);
+		buf.writeByte(1);
+		buf.writeString(broadcaster.stationId());
+		buf.writeString("north");
+		buf.writeInt(1);
+		buf.writeInt(1);
+		buf.writeInt(stations.size());
+		for (final Station station : stations) {
+			buf.writeString(station.id);
+			buf.writeString(station.name);
+		}
+		final List<Checkpoint> checkpoints = new ArrayList<>();
+		for (final Checkpoint checkpoint : manager.data().checkpoints.values()) {
+			if (checkpoint.enabled) {
+				checkpoints.add(checkpoint);
+			}
+		}
+		buf.writeInt(checkpoints.size());
+		for (final Checkpoint checkpoint : checkpoints) {
+			buf.writeString(checkpoint.id);
+			buf.writeString(checkpoint.stationId);
+			buf.writeString(checkpoint.name);
+		}
+		buf.writeInt(broadcaster.checkpointIds().size());
+		for (final String id : broadcaster.checkpointIds()) {
+			buf.writeString(id);
+		}
+		ServerPlayNetworking.send(player, OPEN_BOARD_CONFIG, buf);
 	}
 
 	/** 打开售票机界面 */

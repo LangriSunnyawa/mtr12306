@@ -16,18 +16,18 @@
       "y": 270
     },
     "facing=north,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_pending"
+      "model": "mtr12306:block/ticket_gate_entrance_closed"
     },
     "facing=east,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_pending",
+      "model": "mtr12306:block/ticket_gate_entrance_closed",
       "y": 90
     },
     "facing=south,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_pending",
+      "model": "mtr12306:block/ticket_gate_entrance_closed",
       "y": 180
     },
     "facing=west,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_pending",
+      "model": "mtr12306:block/ticket_gate_entrance_closed",
       "y": 270
     },
     "facing=north,open=open,kind=entrance": {
@@ -61,18 +61,18 @@
       "y": 270
     },
     "facing=north,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_pending"
+      "model": "mtr12306:block/ticket_gate_exit_closed"
     },
     "facing=east,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_pending",
+      "model": "mtr12306:block/ticket_gate_exit_closed",
       "y": 90
     },
     "facing=south,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_pending",
+      "model": "mtr12306:block/ticket_gate_exit_closed",
       "y": 180
     },
     "facing=west,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_pending",
+      "model": "mtr12306:block/ticket_gate_exit_closed",
       "y": 270
     },
     "facing=north,open=open,kind=exit": {

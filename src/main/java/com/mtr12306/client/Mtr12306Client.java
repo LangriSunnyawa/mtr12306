@@ -14,6 +14,10 @@ import java.util.List;
 public class Mtr12306Client implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
+		// 车站大屏渲染器
+		net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(
+				com.mtr12306.block.ModBlocks.STATION_BOARD_ENTITY,
+				com.mtr12306.client.StationBoardRenderer::new);
 		// 报销凭证：手持右键打开蓝票界面（客户端注入，服务端不会加载这些类）
 		com.mtr12306.item.ItemReceipt.clientViewer = stack -> net.minecraft.client.MinecraftClient.getInstance()
 				.setScreen(new ReceiptScreen(com.mtr12306.item.ItemReceipt.json(stack)));
@@ -59,6 +63,32 @@ public class Mtr12306Client implements ClientModInitializer {
 			}
 			client.execute(() -> client.setScreen(
 					new GateConfigScreen(pos, stationId, mode, mtrStation, stations, checkpoints, selected)));
+		});
+
+		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.OPEN_BOARD_CONFIG, (client, handler, buf, sender) -> {
+			final BlockPos pos = buf.readBlockPos();
+			final int kind = buf.readByte();
+			final String stationId = buf.readString(32767);
+			final String rightDirection = buf.readString(16);
+			final int width = buf.readInt();
+			final int height = buf.readInt();
+			final List<String[]> stations = new ArrayList<>();
+			final int stationCount = buf.readInt();
+			for (int i = 0; i < stationCount; i++) {
+				stations.add(new String[]{buf.readString(32767), buf.readString(32767)});
+			}
+			final List<String[]> checkpoints = new ArrayList<>();
+			final int checkpointCount = buf.readInt();
+			for (int i = 0; i < checkpointCount; i++) {
+				checkpoints.add(new String[]{buf.readString(32767), buf.readString(32767), buf.readString(32767)});
+			}
+			final List<String> selected = new ArrayList<>();
+			final int selectedCount = buf.readInt();
+			for (int i = 0; i < selectedCount; i++) {
+				selected.add(buf.readString(32767));
+			}
+			client.execute(() -> client.setScreen(new BoardConfigScreen(pos, stationId, rightDirection, width, height,
+					stations, checkpoints, selected, kind)));
 		});
 
 		ClientPlayNetworking.registerGlobalReceiver(ModNetworking.OPEN_MACHINE, (client, handler, buf, sender) -> {

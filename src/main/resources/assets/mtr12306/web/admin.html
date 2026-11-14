@@ -216,7 +216,21 @@
 				<div id="ticket-table"></div>
 			</div>
 		</div>
-	</main>
+				<div class="card" id="schedule-card">
+				<h2>车次排班表（车场）</h2>
+				<p class="muted">开启后每班发车都要填写车次号：交路里有几条线路就填几个，用 <b>|</b> 分隔（例如 <code>G1001|G1002</code>）。数量不符会在下方标红。</p>
+				<div class="stop-row" style="grid-template-columns:1.2fr .8fr .8fr auto auto">
+					<input type="text" id="depot-name" placeholder="车场名称（如 海宁车辆段）">
+					<input type="number" id="depot-routes" min="1" max="12" value="1" placeholder="交路线路数">
+					<label class="muted" style="display:flex;align-items:center;gap:6px">
+						<input type="checkbox" id="depot-use" checked> 使用排班表
+					</label>
+					<button class="primary" id="depot-add">新增/更新车场</button>
+					<button class="ghost" id="depot-refresh">刷新</button>
+				</div>
+				<div id="schedule-list" style="margin-top:14px"></div>
+			</div>
+		</main>
 
 	<footer>MTR-12306 · 管理后台</footer>
 	<div id="toast" class="toast"></div>

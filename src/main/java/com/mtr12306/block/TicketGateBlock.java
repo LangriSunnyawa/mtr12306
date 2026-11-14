@@ -76,10 +76,44 @@ public class TicketGateBlock extends BlockWithEntity {
 	public static final EnumProperty<GateState> OPEN = EnumProperty.of("open", GateState.class);
 	public static final EnumProperty<GateKind> KIND = EnumProperty.of("kind", GateKind.class);
 
-	/** 关门：整格实心（挡得住人，无法卡进去） */
-	private static final VoxelShape CLOSED_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
-	/** 开门：只剩机柜底座，可以走过 */
-	private static final VoxelShape OPEN_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0);
+	/** 机柜（南北向摆放时位于 X 两侧） */
+	private static final VoxelShape CABINETS_NS = Voxels.union(
+			Block.createCuboidShape(0.0, 0.0, 4.0, 4.0, 15.0, 12.0),
+			Block.createCuboidShape(12.0, 0.0, 4.0, 16.0, 15.0, 12.0));
+	/** 机柜（东西向摆放时位于 Z 两侧） */
+	private static final VoxelShape CABINETS_EW = Voxels.union(
+			Block.createCuboidShape(4.0, 0.0, 0.0, 12.0, 15.0, 4.0),
+			Block.createCuboidShape(4.0, 0.0, 12.0, 12.0, 15.0, 16.0));
+	/** 闸板（关门时横挡通道） */
+	private static final VoxelShape PANEL_NS = Block.createCuboidShape(4.0, 5.0, 7.6, 12.0, 13.0, 8.4);
+	private static final VoxelShape PANEL_EW = Block.createCuboidShape(7.6, 5.0, 4.0, 8.4, 13.0, 12.0);
+	/** 底座 */
+	private static final VoxelShape BASE_NS = Block.createCuboidShape(0.0, 0.0, 4.0, 16.0, 2.0, 12.0);
+	private static final VoxelShape BASE_EW = Block.createCuboidShape(4.0, 0.0, 0.0, 12.0, 2.0, 16.0);
+
+	private static final VoxelShape CLOSED_NS = Voxels.union(CABINETS_NS, PANEL_NS, BASE_NS);
+	private static final VoxelShape CLOSED_EW = Voxels.union(CABINETS_EW, PANEL_EW, BASE_EW);
+	private static final VoxelShape OPEN_NS = Voxels.union(CABINETS_NS, BASE_NS);
+	private static final VoxelShape OPEN_EW = Voxels.union(CABINETS_EW, BASE_EW);
+
+	private static VoxelShape shapeFor(final BlockState state) {
+		final boolean alongX = state.get(FACING).getAxis() == Direction.Axis.Z;
+		if (state.get(OPEN) == GateState.OPEN) {
+			return alongX ? OPEN_NS : OPEN_EW;
+		}
+		return alongX ? CLOSED_NS : CLOSED_EW;
+	}
+
+	/** 小工具：合并若干形状（等价 VoxelShapes.union，写短一点） */
+	private static final class Voxels {
+		private static VoxelShape union(final VoxelShape... shapes) {
+			VoxelShape result = net.minecraft.util.shape.VoxelShapes.empty();
+			for (final VoxelShape shape : shapes) {
+				result = net.minecraft.util.shape.VoxelShapes.union(result, shape);
+			}
+			return result.simplify();
+		}
+	}
 
 	public TicketGateBlock(final Settings settings) {
 		super(settings);
@@ -105,13 +139,13 @@ public class TicketGateBlock extends BlockWithEntity {
 	@Override
 	public VoxelShape getOutlineShape(final BlockState state, final BlockView world, final BlockPos pos,
 			final ShapeContext context) {
-		return CLOSED_SHAPE;
+		return shapeFor(state);
 	}
 
 	@Override
 	public VoxelShape getCollisionShape(final BlockState state, final BlockView world, final BlockPos pos,
 			final ShapeContext context) {
-		return state.get(OPEN) == GateState.OPEN ? OPEN_SHAPE : CLOSED_SHAPE;
+		return shapeFor(state);
 	}
 
 	@Nullable

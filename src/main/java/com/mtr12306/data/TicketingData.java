@@ -16,6 +16,8 @@ public class TicketingData {
 	/** 网页注册账号：key = 昵称小写 */
 	public Map<String, Account> accounts = new LinkedHashMap<>();
 	public List<GateBinding> gates = new ArrayList<>();
+	/** MTR 车场排班表 */
+	public List<ScheduleDepot> depots = new ArrayList<>();
 	public long nextTicketSeq = 1L;
 
 	public Station station(final String id) {
@@ -42,6 +44,15 @@ public class TicketingData {
 	public String checkpointName(final String id) {
 		final Checkpoint checkpoint = checkpoint(id);
 		return checkpoint == null ? "" : checkpoint.name;
+	}
+
+	public ScheduleDepot depot(final String name) {
+		for (final ScheduleDepot depot : depots) {
+			if (depot.name.equalsIgnoreCase(name)) {
+				return depot;
+			}
+		}
+		return null;
 	}
 
 	public GateBinding gate(final String key) {

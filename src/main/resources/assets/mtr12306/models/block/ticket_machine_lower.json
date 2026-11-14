@@ -1,0 +1,66 @@
+{
+  "credit": "MTR-12306 ticket machine lower",
+  "textures": {
+    "particle": "mtr12306:block/machine_side",
+    "side": "mtr12306:block/machine_side",
+    "front": "mtr12306:block/machine_front",
+    "top": "mtr12306:block/machine_top"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        3
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#top"
+        },
+        "down": {
+          "texture": "#side"
+        },
+        "north": {
+          "texture": "#front"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        2,
+        2
+      ],
+      "to": [
+        15,
+        4,
+        4
+      ],
+      "faces": {
+        "up": {
+          "texture": "#front"
+        },
+        "north": {
+          "texture": "#front"
+        },
+        "down": {
+          "texture": "#side"
+        }
+      }
+    }
+  ]
+}

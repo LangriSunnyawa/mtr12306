@@ -197,6 +197,28 @@ public class WebServer {
 			case "/api/purchase" -> writeJson(exchange, 200, purchase(exchange, body));
 			case "/api/tickets" -> writeJson(exchange, 200, ticketsOf(exchange));
 			case "/api/refund" -> writeJson(exchange, 200, refund(exchange, body));
+			case "/api/admin/schedule" -> {
+				final JsonObject json = new JsonObject();
+				json.add("depots", manager.scheduleJson());
+				writeJson(exchange, 200, json);
+			}
+			case "/api/admin/schedule/depot" -> {
+				manager.setScheduleDepot(text(body, "name"), (body.has("useSchedule") && body.get("useSchedule").getAsBoolean()),
+						intValue(body, "routes"));
+				writeJson(exchange, 200, ok("ok"));
+			}
+			case "/api/admin/schedule/entry" -> {
+				manager.addScheduleEntry(text(body, "name"), text(body, "depart"), text(body, "trains"));
+				writeJson(exchange, 200, ok("ok"));
+			}
+			case "/api/admin/schedule/entry/delete" -> {
+				manager.deleteScheduleEntry(text(body, "name"), intValue(body, "index"));
+				writeJson(exchange, 200, ok("ok"));
+			}
+			case "/api/admin/schedule/depot/delete" -> {
+				manager.deleteScheduleDepot(text(body, "name"));
+				writeJson(exchange, 200, ok("ok"));
+			}
 			case "/api/receipt" -> {
 				final String ticketId = firstNonBlank(text(body, "ticket"), queryParam(exchange, "ticket"));
 				final Ticket ticket = manager.data().tickets.get(ticketId);

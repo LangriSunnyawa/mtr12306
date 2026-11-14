@@ -26,6 +26,23 @@ public final class ModBlocks {
 			.create(TicketMachineBlockEntity::new, TICKET_MACHINE)
 			.build();
 
+	public static final Block STATION_BOARD = new StationBoardBlock(
+			FabricBlockSettings.create().strength(1.5F, 6.0F).sounds(net.minecraft.sound.BlockSoundGroup.METAL)
+					.nonOpaque().requiresTool()
+	);
+
+	public static final BlockEntityType<StationBoardBlockEntity> STATION_BOARD_ENTITY = FabricBlockEntityTypeBuilder
+			.create(StationBoardBlockEntity::new, STATION_BOARD)
+			.build();
+
+	public static final Block BROADCASTER = new BroadcasterBlock(
+			FabricBlockSettings.create().strength(1.5F, 6.0F).sounds(BlockSoundGroup.METAL).nonOpaque().requiresTool()
+	);
+
+	public static final BlockEntityType<BroadcasterBlockEntity> BROADCASTER_ENTITY = FabricBlockEntityTypeBuilder
+			.create(BroadcasterBlockEntity::new, BROADCASTER)
+			.build();
+
 	private ModBlocks() {
 	}
 
@@ -34,5 +51,9 @@ public final class ModBlocks {
 		Registry.register(Registries.BLOCK_ENTITY_TYPE, Mtr12306.id("ticket_gate"), TICKET_GATE_ENTITY);
 		Registry.register(Registries.BLOCK, Mtr12306.id("ticket_machine"), TICKET_MACHINE);
 		Registry.register(Registries.BLOCK_ENTITY_TYPE, Mtr12306.id("ticket_machine"), TICKET_MACHINE_ENTITY);
+		Registry.register(Registries.BLOCK, Mtr12306.id("station_board"), STATION_BOARD);
+		Registry.register(Registries.BLOCK_ENTITY_TYPE, Mtr12306.id("station_board"), STATION_BOARD_ENTITY);
+		Registry.register(Registries.BLOCK, Mtr12306.id("broadcaster"), BROADCASTER);
+		Registry.register(Registries.BLOCK_ENTITY_TYPE, Mtr12306.id("broadcaster"), BROADCASTER_ENTITY);
 	}
 }

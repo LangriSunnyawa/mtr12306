@@ -12,6 +12,7 @@ import com.mtr12306.data.GateBinding;
 import com.mtr12306.data.SeatClassConfig;
 import com.mtr12306.data.ServiceStop;
 import com.mtr12306.data.Station;
+import com.mtr12306.data.ScheduleDepot;
 import com.mtr12306.data.Ticket;
 import com.mtr12306.data.TicketingData;
 import com.mtr12306.data.TicketingException;
@@ -1622,6 +1623,106 @@ public class TicketingManager {
 		return best;
 	}
 
+	/* ------------------------------------------------------------------ 车场排班表 */
+
+	/** 排班表总览（含校验结果） */
+	public synchronized JsonArray scheduleJson() {
+		final JsonArray array = new JsonArray();
+		for (final ScheduleDepot depot : data.depots) {
+			final JsonObject json = new JsonObject();
+			json.addProperty("name", depot.name);
+			json.addProperty("useSchedule", depot.useSchedule);
+			json.addProperty("routes", depot.routes);
+			final JsonArray entries = new JsonArray();
+			final java.util.Set<String> used = new java.util.HashSet<>();
+			for (int i = 0; i < depot.entries.size(); i++) {
+				final ScheduleDepot.ScheduleEntry entry = depot.entries.get(i);
+				final JsonObject row = new JsonObject();
+				row.addProperty("index", i);
+				row.addProperty("depart", entry.depart);
+				row.addProperty("trains", entry.trains);
+				final List<String> list = entry.trainList();
+				String error = "";
+				if (!entry.depart.matches("\\d{1,2}:\\d{2}")) {
+					error = "发车时刻格式应为 HH:mm";
+				} else if (list.size() != Math.max(1, depot.routes)) {
+					error = "车次数量不符：交路 " + depot.routes + " 条线路，需填 " + depot.routes + " 个车次，当前 "
+							+ list.size() + " 个";
+				} else {
+					for (final String train : list) {
+						if (!used.add(train)) {
+							error = "车次号重复：" + train;
+							break;
+						}
+					}
+				}
+				row.addProperty("error", error);
+				entries.add(row);
+			}
+			json.add("entries", entries);
+			array.add(json);
+		}
+		return array;
+	}
+
+	/** 新建/更新车场（开关 + 交路线路数） */
+	public synchronized ScheduleDepot setScheduleDepot(final String name, final boolean useSchedule, final int routes) {
+		if (name == null || name.isBlank()) {
+			throw new TicketingException("车场名称不能为空");
+		}
+		ScheduleDepot depot = data.depot(name.trim());
+		if (depot == null) {
+			depot = new ScheduleDepot();
+			depot.name = name.trim();
+			data.depots.add(depot);
+		}
+		depot.useSchedule = useSchedule;
+		depot.routes = Math.max(1, Math.min(12, routes));
+		markDirty();
+		save();
+		return depot;
+	}
+
+	/** 添加一班排班（校验车次数量与格式） */
+	public synchronized void addScheduleEntry(final String depotName, final String depart, final String trains) {
+		final ScheduleDepot depot = data.depot(depotName);
+		if (depot == null) {
+			throw new TicketingException("车场不存在: " + depotName);
+		}
+		if (depot.useSchedule && depart != null && !depart.matches("\\d{1,2}:\\d{2}")) {
+			throw new TicketingException("发车时刻格式应为 HH:mm");
+		}
+		final ScheduleDepot.ScheduleEntry entry = new ScheduleDepot.ScheduleEntry();
+		entry.depart = depart == null ? "" : depart.trim();
+		entry.trains = trains == null ? "" : trains.trim();
+		if (depot.useSchedule) {
+			final List<String> list = entry.trainList();
+			if (list.size() != Math.max(1, depot.routes)) {
+				throw new TicketingException("车次数量不符：交路 " + depot.routes + " 条线路，需填 " + depot.routes
+						+ " 个车次（用 | 分隔），当前 " + list.size() + " 个");
+			}
+		}
+		depot.entries.add(entry);
+		markDirty();
+		save();
+	}
+
+	public synchronized void deleteScheduleEntry(final String depotName, final int index) {
+		final ScheduleDepot depot = data.depot(depotName);
+		if (depot == null || index < 0 || index >= depot.entries.size()) {
+			throw new TicketingException("排班记录不存在");
+		}
+		depot.entries.remove(index);
+		markDirty();
+		save();
+	}
+
+	public synchronized void deleteScheduleDepot(final String name) {
+		data.depots.removeIf(depot -> depot.name.equalsIgnoreCase(name));
+		markDirty();
+		save();
+	}
+
 	/* ------------------------------------------------------------------ 报销凭证 */
 
 	/** 打印报销凭证：标记车票已打印（打印后不可退票） */
@@ -1717,6 +1818,53 @@ public class TicketingManager {
 			json.add("classes", classes);
 			json.addProperty("minPrice", minPrice == Integer.MAX_VALUE ? 0 : minPrice);
 			array.add(json);
+		}
+		return array;
+	}
+
+	/** 车站大屏：本站今日车次行（可按检票口筛选） */
+	public synchronized JsonArray boardRows(final String stationId, final List<String> checkpointIds) {
+		final JsonArray array = new JsonArray();
+		final LocalDate date = today();
+		final ZonedDateTime moment = now();
+		final List<JsonObject> rows = new ArrayList<>();
+		for (final TrainService service : data.services.values()) {
+			if (!service.enabled || !service.runsOn(date.toString())) {
+				continue;
+			}
+			final int fromIndex = service.indexOfStation(stationId);
+			if (fromIndex < 0) {
+				continue;
+			}
+			final ServiceStop stop = service.stops.get(fromIndex);
+			if (!stop.hasDepart()) {
+				continue;
+			}
+			if (!checkpointAllows(checkpointIds, stationId, stop)) {
+				continue;
+			}
+			final ZonedDateTime departure = departureInstant(date, stop);
+			if (departure == null || departure.isBefore(moment.minusHours(6))) {
+				continue;
+			}
+			final ServiceStop lastStop = service.stops.get(service.stops.size() - 1);
+			final boolean boarding = !boardingDate(date, stop).isAfter(date)
+					&& moment.isAfter(departure.minusMinutes(Math.max(1, Mtr12306.CONFIG.boardingOpenMinutes)))
+					&& moment.isBefore(departure.plusMinutes(Math.max(0, Mtr12306.CONFIG.lateGraceMinutes)));
+			final boolean departed = departure.isBefore(moment);
+			final JsonObject row = new JsonObject();
+			row.addProperty("service", service.number);
+			row.addProperty("depart", timeText(parseTime(stop.depart)));
+			row.addProperty("toStation", data.stationName(lastStop.stationId));
+			row.addProperty("platform", stop.platform);
+			row.addProperty("status", boarding ? "正在检票" : (departed ? "已开检" : "候车"));
+			row.addProperty("boarding", boarding);
+			row.addProperty("departed", departed);
+			rows.add(row);
+		}
+		rows.sort((a, b) -> a.get("depart").getAsString().compareTo(b.get("depart").getAsString()));
+		for (int i = 0; i < Math.min(rows.size(), 40); i++) {
+			array.add(rows.get(i));
 		}
 		return array;
 	}

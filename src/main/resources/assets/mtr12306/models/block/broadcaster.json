@@ -1,0 +1,41 @@
+{
+  "credit": "MTR-12306 broadcaster",
+  "textures": {
+    "particle": "mtr12306:block/broadcaster",
+    "body": "mtr12306:block/broadcaster"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        12,
+        5
+      ],
+      "to": [
+        11,
+        16,
+        11
+      ],
+      "faces": {
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        },
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        }
+      }
+    }
+  ]
+}

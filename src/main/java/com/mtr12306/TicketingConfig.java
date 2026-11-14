@@ -58,6 +58,10 @@ public class TicketingConfig {
 	public int validateHours = 12;
 	/** 闸机放行后保持开门的时间（秒） */
 	public int gateOpenSeconds = 4;
+	/** 广播前缀（京张风格："各位旅客请注意，"） */
+	public String broadcastPrefix = "各位旅客请注意，";
+	/** 广播后缀 */
+	public String broadcastSuffix = "感谢您的配合。";
 	/** 全局票价倍率 */
 	public double fareMultiplier = 1.0D;
 	/** 是否启用付费（从 MTR 的 fares 计分板扣款） */
@@ -112,6 +116,8 @@ public class TicketingConfig {
 				config.transferWindowMinutes = integer(json, "transferWindowMinutes", config.transferWindowMinutes);
 				config.validateHours = integer(json, "validateHours", config.validateHours);
 				config.gateOpenSeconds = integer(json, "gateOpenSeconds", config.gateOpenSeconds);
+				config.broadcastPrefix = str(json, "broadcastPrefix", config.broadcastPrefix);
+				config.broadcastSuffix = str(json, "broadcastSuffix", config.broadcastSuffix);
 				config.fareMultiplier = decimal(json, "fareMultiplier", config.fareMultiplier);
 				config.requirePayment = bool(json, "requirePayment", config.requirePayment);
 				config.fareObjective = str(json, "fareObjective", config.fareObjective);

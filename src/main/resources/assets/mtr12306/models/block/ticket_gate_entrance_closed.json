@@ -1,10 +1,265 @@
 {
-  "parent": "mtr12306:block/ticket_gate_base",
+  "credit": "MTR-12306 low-poly gate",
   "textures": {
-    "color": "block/orange_concrete",
-    "yellow_glass_off": "block/yellow_stained_glass",
-    "yellow_glass_on": "mtr12306:block/gate_transparent",
-    "sign": "mtr12306:block/gate_transparent",
+    "particle": "mtr12306:block/gate_metal",
+    "metal": "mtr12306:block/gate_metal",
+    "panel": "mtr12306:block/gate_panel",
     "arrow": "mtr12306:block/gate_arrow_white"
-  }
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        4
+      ],
+      "to": [
+        16,
+        2,
+        12
+      ],
+      "faces": {
+        "up": {
+          "texture": "block/orange_concrete"
+        },
+        "down": {
+          "texture": "block/orange_concrete"
+        },
+        "north": {
+          "texture": "block/orange_concrete"
+        },
+        "south": {
+          "texture": "block/orange_concrete"
+        },
+        "east": {
+          "texture": "block/orange_concrete"
+        },
+        "west": {
+          "texture": "block/orange_concrete"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        2,
+        4
+      ],
+      "to": [
+        4,
+        15,
+        12
+      ],
+      "faces": {
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            13
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        12,
+        2,
+        4
+      ],
+      "to": [
+        16,
+        15,
+        12
+      ],
+      "faces": {
+        "up": {
+          "texture": "#metal"
+        },
+        "down": {
+          "texture": "#metal"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            4,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            4,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            8,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            8,
+            13
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        1.5,
+        11,
+        3.4
+      ],
+      "to": [
+        2.5,
+        14,
+        4.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#arrow"
+        }
+      }
+    },
+    {
+      "from": [
+        13.5,
+        11,
+        3.4
+      ],
+      "to": [
+        14.5,
+        14,
+        4.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#arrow"
+        }
+      }
+    },
+    {
+      "from": [
+        4.2,
+        12,
+        3.6
+      ],
+      "to": [
+        5.2,
+        14,
+        5.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": "#panel"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            8,
+            8
+          ],
+          "texture": "#panel"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        5,
+        7.6
+      ],
+      "to": [
+        12,
+        13,
+        8.4
+      ],
+      "faces": {
+        "north": {
+          "texture": "#panel"
+        },
+        "south": {
+          "texture": "#panel"
+        },
+        "up": {
+          "texture": "#panel"
+        },
+        "down": {
+          "texture": "#panel"
+        },
+        "east": {
+          "texture": "#panel"
+        },
+        "west": {
+          "texture": "#panel"
+        }
+      }
+    }
+  ]
 }

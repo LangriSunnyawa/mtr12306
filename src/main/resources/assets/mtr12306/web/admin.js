@@ -84,6 +84,7 @@ async function refresh() {
 		renderStations();
 		renderStationTabs();
 		renderCheckpoints();
+		loadSchedule();
 		renderServices();
 		renderGates();
 		renderBoarding();
@@ -156,6 +157,70 @@ function renderStations() {
 }
 
 let activeStationTab = "";
+
+async function loadSchedule() {
+	const box = $("#schedule-list");
+	if (!box) {
+		return;
+	}
+	try {
+		const data = await apiAdmin("/api/admin/schedule");
+		const depots = data.depots || [];
+		if (!depots.length) {
+			box.innerHTML = '<div class="empty">还没有车场，先在上方新增</div>';
+			return;
+		}
+		box.innerHTML = depots.map((depot) => {
+			const rows = depot.entries.map((entry) => "<tr>"
+				+ "<td>" + escapeHtml(entry.depart) + "</td>"
+				+ "<td>" + escapeHtml(entry.trains) + "</td>"
+				+ "<td>" + (entry.error ? '<span class="badge red">' + escapeHtml(entry.error) + "</span>"
+					: '<span class="badge green">正常</span>') + "</td>"
+				+ '<td><button class="danger small" data-sched-del="' + depot.name + "::" + entry.index + '">删除</button></td>'
+				+ "</tr>").join("");
+			return '<div class="card" style="background:#fafcff;box-shadow:none;border:1px solid #e3e6ea;margin-bottom:12px">'
+				+ "<h3>" + escapeHtml(depot.name)
+				+ (depot.useSchedule ? ' <span class="badge green">排班表已启用</span>' : ' <span class="badge gray">未启用</span>')
+				+ '</h3><p class="muted">交路线路数：' + depot.routes + "</p>"
+				+ '<div class="stop-row" style="grid-template-columns:.6fr 1.4fr auto">'
+				+ '<input type="text" placeholder="发车 HH:mm" data-sched-time="' + escapeHtml(depot.name) + '">'
+				+ '<input type="text" placeholder="车次1|车次2" data-sched-trains="' + escapeHtml(depot.name) + '">'
+				+ '<button class="primary small" data-sched-add="' + escapeHtml(depot.name) + '">添加一班</button></div>'
+				+ (depot.entries.length
+					? "<table><thead><tr><th>发车</th><th>车次</th><th>校验</th><th>操作</th></tr></thead><tbody>" + rows + "</tbody></table>"
+					: '<div class="empty">还没有排班</div>')
+				+ "</div>";
+		}).join("");
+
+		box.querySelectorAll("[data-sched-add]").forEach((button) => {
+			button.addEventListener("click", async () => {
+				const name = button.dataset.schedAdd;
+				const depart = box.querySelector('[data-sched-time="' + name + '"]').value.trim();
+				const trains = box.querySelector('[data-sched-trains="' + name + '"]').value.trim();
+				try {
+					await apiAdmin("/api/admin/schedule/entry", { name, depart, trains });
+					toast("排班已添加");
+					loadSchedule();
+				} catch (error) {
+					toast(error.message, true);
+				}
+			});
+		});
+		box.querySelectorAll("[data-sched-del]").forEach((button) => {
+			button.addEventListener("click", async () => {
+				const [name, index] = button.dataset.schedDel.split("::");
+				try {
+					await apiAdmin("/api/admin/schedule/entry/delete", { name, index: Number(index) });
+					loadSchedule();
+				} catch (error) {
+					toast(error.message, true);
+				}
+			});
+		});
+	} catch (error) {
+		box.innerHTML = '<div class="empty">加载失败：' + escapeHtml(error.message) + "</div>";
+	}
+}
 
 function renderStationTabs() {
 	const tabs = $("#station-tabs");

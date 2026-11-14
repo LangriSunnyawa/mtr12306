@@ -11,5 +11,9 @@
   "item.mtr12306.receipt": "报销凭证",
   "item.mtr12306.receipt.empty": "未写入车票信息",
   "item.mtr12306.receipt.hint": "手持右键查看报销凭证",
-  "itemGroup.mtr12306.gates": "MTR-12306 检票闸机"
+  "itemGroup.mtr12306.gates": "MTR-12306 检票闸机",
+  "block.mtr12306.station_board": "车站大屏",
+  "item.mtr12306.station_board": "车站大屏",
+  "block.mtr12306.broadcaster": "车站广播器",
+  "item.mtr12306.broadcaster": "车站广播器"
 }

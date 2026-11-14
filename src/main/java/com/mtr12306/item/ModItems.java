@@ -24,6 +24,10 @@ public final class ModItems {
 	public static final Item CONFIG_TOOL = new ConfigToolItem(new Item.Settings().maxCount(1));
 	public static final Item TICKET_MACHINE_ITEM = new net.minecraft.item.BlockItem(ModBlocks.TICKET_MACHINE,
 			new Item.Settings());
+	public static final Item STATION_BOARD_ITEM = new net.minecraft.item.BlockItem(ModBlocks.STATION_BOARD,
+			new Item.Settings());
+	public static final Item BROADCASTER_ITEM = new net.minecraft.item.BlockItem(ModBlocks.BROADCASTER,
+			new Item.Settings());
 	public static final Item RECEIPT = new ItemReceipt(new Item.Settings().maxCount(1));
 
 	private static final ItemGroup GROUP = FabricItemGroup.builder()
@@ -37,6 +41,8 @@ public final class ModItems {
 				entries.add(GATE_VALIDATE);
 				entries.add(CONFIG_TOOL);
 				entries.add(TICKET_MACHINE_ITEM);
+				entries.add(STATION_BOARD_ITEM);
+				entries.add(BROADCASTER_ITEM);
 			})
 			.build();
 
@@ -51,6 +57,8 @@ public final class ModItems {
 		register("ticket_gate_validate", GATE_VALIDATE);
 		register("config_tool", CONFIG_TOOL);
 		register("ticket_machine", TICKET_MACHINE_ITEM);
+		register("station_board", STATION_BOARD_ITEM);
+		register("broadcaster", BROADCASTER_ITEM);
 		register("receipt", RECEIPT);
 		Registry.register(Registries.ITEM_GROUP, Mtr12306.id("gates"), GROUP);
 	}
