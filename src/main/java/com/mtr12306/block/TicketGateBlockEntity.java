@@ -19,6 +19,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -186,6 +187,7 @@ public class TicketGateBlockEntity extends BlockEntity {
 		final BlockState state = serverWorld.getBlockState(pos);
 		if (state.get(TicketGateBlock.OPEN) == TicketGateBlock.GateState.CLOSED) {
 			closeAt = 0L;
+			blockVaulting(serverWorld, pos, state);
 			return;
 		}
 		final long now = System.currentTimeMillis();
@@ -195,6 +197,52 @@ public class TicketGateBlockEntity extends BlockEntity {
 		if (now >= closeAt) {
 			serverWorld.setBlockState(pos, state.with(TicketGateBlock.OPEN, TicketGateBlock.GateState.CLOSED), 3);
 			closeAt = 0L;
+		}
+	}
+
+	/**
+	 * 防跳跃：闸机只有 1 格高，玩家本可跳过去。这里每 tick 检查「闸机正上方 3 格内」的区域，
+	 * 一旦有玩家悬空进入通道范围，立即推回原侧，从而无法翻越。
+	 */
+	private void blockVaulting(final ServerWorld world, final BlockPos pos, final BlockState state) {
+		final Direction facing = state.get(TicketGateBlock.FACING);
+		final double fx = facing.getOffsetX();
+		final double fz = facing.getOffsetZ();
+		final double cx = pos.getX() + 0.5D;
+		final double cz = pos.getZ() + 0.5D;
+		final Box zone = new Box(pos).expand(0.6D, 0.0D, 0.6D).stretch(0.0D, 3.0D, 0.0D);
+		for (final net.minecraft.entity.Entity entity : world.getOtherEntities(null, zone,
+				candidate -> candidate instanceof ServerPlayerEntity)) {
+			final ServerPlayerEntity player = (ServerPlayerEntity) entity;
+			if (player.isSpectator()) {
+				continue;
+			}
+			final double dx = player.getX() - cx;
+			final double dz = player.getZ() - cz;
+			final double along = dx * fx + dz * fz;
+			final double lateral = Math.abs(dx * -fz + dz * fx);
+			if (lateral > 0.55D || Math.abs(along) > 0.95D) {
+				continue;
+			}
+			final double feet = player.getY();
+			if (feet < pos.getY() - 0.2D || feet > pos.getY() + 3.0D) {
+				continue;
+			}
+			// 只处理"在空中"的情况（贴地走过去会被方块碰撞挡住）
+			if (player.isOnGround()) {
+				continue;
+			}
+			final double sign = along <= 0 ? -1.0D : 1.0D;
+			final double targetX = cx + fx * 1.2D * sign;
+			final double targetZ = cz + fz * 1.2D * sign;
+			if (player.networkHandler != null) {
+				player.requestTeleport(targetX, pos.getY(), targetZ);
+			} else {
+				player.setPos(targetX, pos.getY(), targetZ);
+			}
+			player.setVelocity(Vec3d.ZERO);
+			player.velocityModified = true;
+			notify(player, "§c✘ 请勿翻越闸机，请持有效车票检票通行", 1500L);
 		}
 	}
 

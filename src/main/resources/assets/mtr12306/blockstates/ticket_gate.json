@@ -1,94 +1,184 @@
 {
   "variants": {
-    "facing=north,open=closed,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed"
-    },
-    "facing=east,open=closed,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed",
-      "y": 90
-    },
-    "facing=south,open=closed,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed",
+    "connected=true,facing=north,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile",
       "y": 180
     },
-    "facing=west,open=closed,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed",
-      "y": 270
-    },
-    "facing=north,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed"
-    },
-    "facing=east,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed",
-      "y": 90
-    },
-    "facing=south,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed",
+    "connected=false,facing=north,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side",
       "y": 180
     },
-    "facing=west,open=pending,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_closed",
-      "y": 270
-    },
-    "facing=north,open=open,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_open"
-    },
-    "facing=east,open=open,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_open",
-      "y": 90
-    },
-    "facing=south,open=open,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_open",
+    "connected=true,facing=north,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile",
       "y": 180
     },
-    "facing=west,open=open,kind=entrance": {
-      "model": "mtr12306:block/ticket_gate_entrance_open",
-      "y": 270
-    },
-    "facing=north,open=closed,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed"
-    },
-    "facing=east,open=closed,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed",
-      "y": 90
-    },
-    "facing=south,open=closed,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed",
+    "connected=false,facing=north,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile_side",
       "y": 180
     },
-    "facing=west,open=closed,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed",
-      "y": 270
-    },
-    "facing=north,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed"
-    },
-    "facing=east,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed",
-      "y": 90
-    },
-    "facing=south,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed",
+    "connected=true,facing=north,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile",
       "y": 180
     },
-    "facing=west,open=pending,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_closed",
-      "y": 270
-    },
-    "facing=north,open=open,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_open"
-    },
-    "facing=east,open=open,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_open",
-      "y": 90
-    },
-    "facing=south,open=open,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_open",
+    "connected=false,facing=north,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side",
       "y": 180
     },
-    "facing=west,open=open,kind=exit": {
-      "model": "mtr12306:block/ticket_gate_exit_open",
+    "connected=true,facing=north,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile",
+      "y": 180
+    },
+    "connected=false,facing=north,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 180
+    },
+    "connected=true,facing=north,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open",
+      "y": 180
+    },
+    "connected=false,facing=north,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open_side",
+      "y": 180
+    },
+    "connected=true,facing=north,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open",
+      "y": 180
+    },
+    "connected=false,facing=north,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open_side",
+      "y": 180
+    },
+    "connected=true,facing=east,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile",
       "y": 270
+    },
+    "connected=false,facing=east,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 270
+    },
+    "connected=true,facing=east,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile",
+      "y": 270
+    },
+    "connected=false,facing=east,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 270
+    },
+    "connected=true,facing=east,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile",
+      "y": 270
+    },
+    "connected=false,facing=east,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 270
+    },
+    "connected=true,facing=east,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile",
+      "y": 270
+    },
+    "connected=false,facing=east,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 270
+    },
+    "connected=true,facing=east,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open",
+      "y": 270
+    },
+    "connected=false,facing=east,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open_side",
+      "y": 270
+    },
+    "connected=true,facing=east,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open",
+      "y": 270
+    },
+    "connected=false,facing=east,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open_side",
+      "y": 270
+    },
+    "connected=true,facing=south,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile"
+    },
+    "connected=false,facing=south,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side"
+    },
+    "connected=true,facing=south,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile"
+    },
+    "connected=false,facing=south,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile_side"
+    },
+    "connected=true,facing=south,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile"
+    },
+    "connected=false,facing=south,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side"
+    },
+    "connected=true,facing=south,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile"
+    },
+    "connected=false,facing=south,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile_side"
+    },
+    "connected=true,facing=south,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open"
+    },
+    "connected=false,facing=south,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open_side"
+    },
+    "connected=true,facing=south,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open"
+    },
+    "connected=false,facing=south,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open_side"
+    },
+    "connected=true,facing=west,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile",
+      "y": 90
+    },
+    "connected=false,facing=west,open=closed,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 90
+    },
+    "connected=true,facing=west,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile",
+      "y": 90
+    },
+    "connected=false,facing=west,open=closed,kind=exit": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 90
+    },
+    "connected=true,facing=west,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile",
+      "y": 90
+    },
+    "connected=false,facing=west,open=pending,kind=entrance": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 90
+    },
+    "connected=true,facing=west,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile",
+      "y": 90
+    },
+    "connected=false,facing=west,open=pending,kind=exit": {
+      "model": "mtr12306:block/turnstile_side",
+      "y": 90
+    },
+    "connected=true,facing=west,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open",
+      "y": 90
+    },
+    "connected=false,facing=west,open=open,kind=entrance": {
+      "model": "mtr12306:block/turnstile_open_side",
+      "y": 90
+    },
+    "connected=true,facing=west,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open",
+      "y": 90
+    },
+    "connected=false,facing=west,open=open,kind=exit": {
+      "model": "mtr12306:block/turnstile_open_side",
+      "y": 90
     }
   }
 }

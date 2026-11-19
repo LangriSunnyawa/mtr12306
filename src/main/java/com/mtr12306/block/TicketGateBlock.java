@@ -20,6 +20,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -75,33 +76,27 @@ public class TicketGateBlock extends BlockWithEntity {
 
 	public static final EnumProperty<GateState> OPEN = EnumProperty.of("open", GateState.class);
 	public static final EnumProperty<GateKind> KIND = EnumProperty.of("kind", GateKind.class);
+	/** 是否与相邻闸机连成一排（决定用 Metropolis 的「并排」还是「独立」模型） */
+	public static final BooleanProperty CONNECTED = BooleanProperty.of("connected");
 
-	/** 机柜（南北向摆放时位于 X 两侧） */
-	private static final VoxelShape CABINETS_NS = Voxels.union(
-			Block.createCuboidShape(0.0, 0.0, 4.0, 4.0, 15.0, 12.0),
-			Block.createCuboidShape(12.0, 0.0, 4.0, 16.0, 15.0, 12.0));
-	/** 机柜（东西向摆放时位于 Z 两侧） */
-	private static final VoxelShape CABINETS_EW = Voxels.union(
-			Block.createCuboidShape(4.0, 0.0, 0.0, 12.0, 15.0, 4.0),
-			Block.createCuboidShape(4.0, 0.0, 12.0, 12.0, 15.0, 16.0));
-	/** 闸板（关门时横挡通道） */
-	private static final VoxelShape PANEL_NS = Block.createCuboidShape(4.0, 5.0, 7.6, 12.0, 13.0, 8.4);
-	private static final VoxelShape PANEL_EW = Block.createCuboidShape(7.6, 5.0, 4.0, 8.4, 13.0, 12.0);
-	/** 底座 */
-	private static final VoxelShape BASE_NS = Block.createCuboidShape(0.0, 0.0, 4.0, 16.0, 2.0, 12.0);
-	private static final VoxelShape BASE_EW = Block.createCuboidShape(4.0, 0.0, 0.0, 12.0, 2.0, 16.0);
-
-	private static final VoxelShape CLOSED_NS = Voxels.union(CABINETS_NS, PANEL_NS, BASE_NS);
-	private static final VoxelShape CLOSED_EW = Voxels.union(CABINETS_EW, PANEL_EW, BASE_EW);
-	private static final VoxelShape OPEN_NS = Voxels.union(CABINETS_NS, BASE_NS);
-	private static final VoxelShape OPEN_EW = Voxels.union(CABINETS_EW, BASE_EW);
+	/** 关门：整格实心，走不过去，也挡得住贴边 */
+	private static final VoxelShape CLOSED_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+	/** 开门（南北向）：两侧窄机柜 + 底板，中间留 0.75 格通道 */
+	private static final VoxelShape OPEN_NS = Voxels.union(
+			Block.createCuboidShape(0.0, 0.0, 0.0, 2.0, 16.0, 16.0),
+			Block.createCuboidShape(14.0, 0.0, 0.0, 16.0, 16.0, 16.0),
+			Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0));
+	/** 开门（东西向） */
+	private static final VoxelShape OPEN_EW = Voxels.union(
+			Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 16.0, 2.0),
+			Block.createCuboidShape(0.0, 0.0, 14.0, 16.0, 16.0, 16.0),
+			Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 2.0, 16.0));
 
 	private static VoxelShape shapeFor(final BlockState state) {
-		final boolean alongX = state.get(FACING).getAxis() == Direction.Axis.Z;
 		if (state.get(OPEN) == GateState.OPEN) {
-			return alongX ? OPEN_NS : OPEN_EW;
+			return state.get(FACING).getAxis() == Direction.Axis.Z ? OPEN_NS : OPEN_EW;
 		}
-		return alongX ? CLOSED_NS : CLOSED_EW;
+		return CLOSED_SHAPE;
 	}
 
 	/** 小工具：合并若干形状（等价 VoxelShapes.union，写短一点） */
@@ -118,12 +113,12 @@ public class TicketGateBlock extends BlockWithEntity {
 	public TicketGateBlock(final Settings settings) {
 		super(settings);
 		setDefaultState(getDefaultState().with(FACING, Direction.NORTH).with(OPEN, GateState.CLOSED)
-				.with(KIND, GateKind.ENTRANCE));
+				.with(KIND, GateKind.ENTRANCE).with(CONNECTED, false));
 	}
 
 	@Override
 	protected void appendProperties(final StateManager.Builder<Block, BlockState> builder) {
-		builder.add(FACING, OPEN, KIND);
+		builder.add(FACING, OPEN, KIND, CONNECTED);
 	}
 
 	@Override
@@ -175,10 +170,38 @@ public class TicketGateBlock extends BlockWithEntity {
 		}
 	}
 
+	/** 左右（与朝向垂直的两侧）有同朝向闸机时视为「并排」 */
+	private static void updateConnected(final World world, final BlockPos pos) {
+		final BlockState state = world.getBlockState(pos);
+		if (!state.isOf(ModBlocks.TICKET_GATE)) {
+			return;
+		}
+		final Direction facing = state.get(FACING);
+		final Direction left = facing.rotateYCounterclockwise();
+		final Direction right = facing.rotateYClockwise();
+		boolean connected = false;
+		for (final Direction side : new Direction[]{left, right}) {
+			final BlockState other = world.getBlockState(pos.offset(side));
+			if (other.isOf(ModBlocks.TICKET_GATE) && other.get(FACING) == facing) {
+				connected = true;
+				break;
+			}
+		}
+		if (state.get(CONNECTED) != connected) {
+			world.setBlockState(pos, state.with(CONNECTED, connected), Block.NOTIFY_ALL);
+		}
+	}
+
 	@Override
 	public void onPlaced(final World world, final BlockPos pos, final BlockState state, @Nullable final LivingEntity placer,
 			final ItemStack itemStack) {
 		super.onPlaced(world, pos, state, placer, itemStack);
+		if (!world.isClient()) {
+			updateConnected(world, pos);
+			for (final Direction direction : Direction.Type.HORIZONTAL) {
+				updateConnected(world, pos.offset(direction));
+			}
+		}
 		if (world.isClient() || !(world.getBlockEntity(pos) instanceof TicketGateBlockEntity gate)) {
 			return;
 		}
@@ -196,8 +219,13 @@ public class TicketGateBlock extends BlockWithEntity {
 	@Override
 	public void onStateReplaced(final BlockState state, final World world, final BlockPos pos, final BlockState newState,
 			final boolean moved) {
-		if (!world.isClient() && !state.isOf(newState.getBlock()) && Mtr12306.manager() != null) {
-			Mtr12306.manager().removeGate(GateHelper.key(world, pos));
+		if (!world.isClient() && !state.isOf(newState.getBlock())) {
+			if (Mtr12306.manager() != null) {
+				Mtr12306.manager().removeGate(GateHelper.key(world, pos));
+			}
+			for (final Direction direction : Direction.Type.HORIZONTAL) {
+				updateConnected(world, pos.offset(direction));
+			}
 		}
 		super.onStateReplaced(state, world, pos, newState, moved);
 	}
