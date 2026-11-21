@@ -1,7 +1,6 @@
 package com.mtr12306.block;
 
 import com.mtr12306.Mtr12306;
-import com.mtr12306.item.ConfigToolItem;
 import com.mtr12306.net.ModNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
@@ -243,7 +242,7 @@ public class TicketGateBlock extends BlockWithEntity {
 			return ActionResult.PASS;
 		}
 		gate.syncBinding();
-		final boolean withTool = player.getStackInHand(hand).getItem() instanceof ConfigToolItem;
+		final boolean withTool = com.mtr12306.item.ConfigTools.isConfigTool(player.getStackInHand(hand));
 		if (withTool && serverPlayer.hasPermissionLevel(2)) {
 			ModNetworking.openGateConfig(serverPlayer, gate);
 			return ActionResult.SUCCESS;

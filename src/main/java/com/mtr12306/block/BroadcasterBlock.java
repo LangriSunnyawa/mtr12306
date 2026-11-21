@@ -1,6 +1,5 @@
 package com.mtr12306.block;
 
-import com.mtr12306.item.ConfigToolItem;
 import com.mtr12306.net.ModNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
@@ -91,7 +90,7 @@ public class BroadcasterBlock extends BlockWithEntity {
 		if (!(world.getBlockEntity(pos) instanceof BroadcasterBlockEntity broadcaster)) {
 			return ActionResult.PASS;
 		}
-		if (player.getStackInHand(hand).getItem() instanceof ConfigToolItem && serverPlayer.hasPermissionLevel(2)) {
+		if (com.mtr12306.item.ConfigTools.isConfigTool(player.getStackInHand(hand)) && serverPlayer.hasPermissionLevel(2)) {
 			ModNetworking.openBroadcastConfig(serverPlayer, broadcaster);
 			return ActionResult.SUCCESS;
 		}

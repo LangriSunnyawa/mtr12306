@@ -1,5 +1,5 @@
 {
-  "parent": "mtr12306:block/ticket_gate_entrance_closed",
+  "parent": "mtr12306:block/turnstile_side",
   "display": {
     "gui": {
       "rotation": [

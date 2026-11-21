@@ -1,9 +1,9 @@
 {
 	"parent": "block/block",
 	"textures": {
-		"particle": "mtr12306:block/gate_metal",
-		"front": "mtr12306:block/machine_front",
-		"white": "mtr12306:block/machine_white"
+		"particle": "mtr:block/metal",
+		"front": "mtr:block/ticket_machine",
+		"white": "mtr:block/white"
 	},
 	"elements": [
 		{	"__comment": "Top",
