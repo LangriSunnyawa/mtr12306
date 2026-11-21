@@ -6,7 +6,6 @@
   "item.mtr12306.ticket_gate_both": "Ticket Gate (Two-way)",
   "item.mtr12306.ticket_gate_transfer": "Ticket Gate (Transfer)",
   "item.mtr12306.ticket_gate_validate": "Ticket Gate (Validation)",
-  "item.mtr12306.config_tool": "Gate Config Tool",
   "item.mtr12306.ticket_machine": "Ticket Machine",
   "item.mtr12306.receipt": "Reimbursement Receipt",
   "item.mtr12306.receipt.empty": "No ticket data",

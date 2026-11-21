@@ -6,7 +6,6 @@
   "item.mtr12306.ticket_gate_both": "检票闸机（双向）",
   "item.mtr12306.ticket_gate_transfer": "换乘闸机",
   "item.mtr12306.ticket_gate_validate": "车票核验闸机",
-  "item.mtr12306.config_tool": "闸机配置面板",
   "item.mtr12306.ticket_machine": "售票机",
   "item.mtr12306.receipt": "报销凭证",
   "item.mtr12306.receipt.empty": "未写入车票信息",

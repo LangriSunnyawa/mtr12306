@@ -22,7 +22,7 @@ import org.joml.Matrix4f;
  * 车站大屏渲染：只在锚点方块处绘制整块矩形画面（一次绘制，性能与普通方块持平）。
  */
 public class StationBoardRenderer implements BlockEntityRenderer<StationBoardBlockEntity> {
-	private static final int BACKGROUND = 0xFF0A1018;
+	private static final int BACKGROUND = 0xFF000000;
 	private static final int HEADER_COLOR = 0xFFEAF2FF;
 	private static final int ROW_COLOR = 0xFFB8CBE0;
 	private static final int BOARDING_COLOR = 0xFF4CD964;
@@ -59,12 +59,8 @@ public class StationBoardRenderer implements BlockEntityRenderer<StationBoardBlo
 
 		final float w = width;
 		final float h = height;
-		final float z = 14.55F / 16.0F;
-
-		// 背景板
-		final Matrix4f matrix = matrices.peek().getPositionMatrix();
-		final VertexConsumer solid = vertexConsumers.getBuffer(RenderLayer.getSolid());
-		quad(solid, matrix, 0.02F, 0.02F, w - 0.02F, h - 0.02F, z, BACKGROUND, light);
+		// 正面就是方块北面（z=0），文字画在其外侧一点点
+		final float z = -0.012F;
 
 		// 文本
 		final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;

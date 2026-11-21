@@ -21,7 +21,6 @@ public final class ModItems {
 	public static final Item GATE_BOTH = new GateItem(ModBlocks.TICKET_GATE, new Item.Settings(), "BOTH");
 	public static final Item GATE_TRANSFER = new GateItem(ModBlocks.TICKET_GATE, new Item.Settings(), "TRANSFER");
 	public static final Item GATE_VALIDATE = new GateItem(ModBlocks.TICKET_GATE, new Item.Settings(), "VALIDATE");
-	public static final Item CONFIG_TOOL = new ConfigToolItem(new Item.Settings().maxCount(1));
 	public static final Item TICKET_MACHINE_ITEM = new net.minecraft.item.BlockItem(ModBlocks.TICKET_MACHINE,
 			new Item.Settings());
 	public static final Item STATION_BOARD_ITEM = new net.minecraft.item.BlockItem(ModBlocks.STATION_BOARD,
@@ -39,7 +38,6 @@ public final class ModItems {
 				entries.add(GATE_BOTH);
 				entries.add(GATE_TRANSFER);
 				entries.add(GATE_VALIDATE);
-				entries.add(CONFIG_TOOL);
 				entries.add(TICKET_MACHINE_ITEM);
 				entries.add(STATION_BOARD_ITEM);
 				entries.add(BROADCASTER_ITEM);
@@ -55,7 +53,6 @@ public final class ModItems {
 		register("ticket_gate_both", GATE_BOTH);
 		register("ticket_gate_transfer", GATE_TRANSFER);
 		register("ticket_gate_validate", GATE_VALIDATE);
-		register("config_tool", CONFIG_TOOL);
 		register("ticket_machine", TICKET_MACHINE_ITEM);
 		register("station_board", STATION_BOARD_ITEM);
 		register("broadcaster", BROADCASTER_ITEM);
